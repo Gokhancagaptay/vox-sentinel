@@ -1,0 +1,4 @@
+# Yardımcı scriptler (scripts/ altındaki bazı deneme araçları)
+-r requirements.txt
+SpeechRecognition>=3.10.0
+gTTS>=2.3.0

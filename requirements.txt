@@ -1,0 +1,29 @@
+# ─── ASR motorları ───────────────────────────────────────────────
+vosk
+openai>=1.0.0
+openai-whisper>=20231117
+
+# ─── Fonetik eşleştirici ─────────────────────────────────────────
+jellyfish>=1.0.0
+
+# ─── Sayısal (Whisper / bazı ortamlar) ───────────────────────────
+numpy>=1.21.0
+
+# ─── Ses işleme ──────────────────────────────────────────────────
+pydub
+pyaudio
+
+# ─── Kurulum ─────────────────────────────────────────────────────
+#   pip install -r requirements.txt
+#
+# Mikrofon aracı (mic_censor.py) için ayrıca:
+#   pip install -r requirements-mic.txt
+#
+# FFmpeg sisteme ayrıca kurulmalıdır.
+#   Windows: https://ffmpeg.org/download.html  (PATH'e ekleyin)
+#   Linux  : sudo apt install ffmpeg
+#   macOS  : brew install ffmpeg
+#
+# Not: openai-whisper PyTorch çeker; kurulum boyutu büyüktür. Yalnızca API
+# kullanacaksanız ve yerel Whisper istemiyorsanız, whisper_local kullanımını
+# config/settings.py içinde WHISPER_MODE="api" ile sınırlayabilirsiniz.

@@ -1,0 +1,4 @@
+# Mikrofon sansürü (mic_censor.py)
+-r requirements.txt
+sounddevice>=0.4.6
+scipy>=1.9.0
