@@ -14,7 +14,12 @@ import unicodedata
 import logging
 import jellyfish
 
-from config.settings import VOTE_MERGE_THRESHOLD_MS, PHONETIC_SIMILARITY_THRESHOLD
+from config.settings import (
+    VOTE_MERGE_THRESHOLD_MS,
+    PHONETIC_SIMILARITY_THRESHOLD,
+    PHONETIC_LENGTH_DIFF_MAX,
+    BIGRAM_MAX_GAP_SEC,
+)
 from config.banned_words import YASAKLI_KELIMELER
 from config.whitelist import beyaz_listede_mi
 
@@ -96,7 +101,16 @@ def find_whisper_banned_words(whisper_words: list[dict]) -> list[dict]:
     bigram_detections = _check_bigrams(whisper_words)
     detections.extend(bigram_detections)
 
-    return detections
+    # ── Tekrar (dedup): aynı start/end aralığı birden fazla kez raporlandıysa ilkini tut ──
+    seen: set[tuple[float, float]] = set()
+    unique: list[dict] = []
+    for det in detections:
+        key = (det["start"], det["end"])
+        if key not in seen:
+            seen.add(key)
+            unique.append(det)
+
+    return unique
 
 
 def _match_single_word(word_normalized: str) -> tuple[str | None, float]:
@@ -122,7 +136,7 @@ def _match_single_word(word_normalized: str) -> tuple[str | None, float]:
 
         # Fonetik benzerlik — çok farklı uzunluklarda karşılaştırma yapma
         # Kısa kelimeler için eşik çok yüksek tutulur (yanlış alarm önleme)
-        if abs(len(word_normalized) - len(banned_normalized)) <= 2:
+        if abs(len(word_normalized) - len(banned_normalized)) <= PHONETIC_LENGTH_DIFF_MAX:
             threshold = _fuzzy_threshold_for(word_normalized)
             score = jellyfish.jaro_winkler_similarity(word_normalized, banned_normalized)
             if score >= threshold and score > best_score:
@@ -149,8 +163,8 @@ def _check_bigrams(whisper_words: list[dict]) -> list[dict]:
         w1 = whisper_words[i]
         w2 = whisper_words[i + 1]
 
-        # İki kelime arasında en fazla 300ms boşluk olsun
-        if w2["start"] - w1["end"] > 0.30:
+        # İki kelime arasında en fazla BIGRAM_MAX_GAP_SEC boşluk olsun
+        if w2["start"] - w1["end"] > BIGRAM_MAX_GAP_SEC:
             continue
 
         combined = _normalize(w1["word"]) + _normalize(w2["word"])
@@ -172,8 +186,8 @@ def _check_bigrams(whisper_words: list[dict]) -> list[dict]:
                 best_score = 1.0
                 break
 
-            # Uzunluk farkı 2'den fazlaysa fonetik karşılaştırma yapma
-            if abs(len(combined) - len(banned_normalized)) > 2:
+            # Uzunluk farkı fazlaysa fonetik karşılaştırma yapma
+            if abs(len(combined) - len(banned_normalized)) > PHONETIC_LENGTH_DIFF_MAX:
                 continue
 
             score = jellyfish.jaro_winkler_similarity(combined, banned_normalized)

@@ -14,12 +14,18 @@ Bağımlılık: jellyfish kütüphanesi (pip install jellyfish)
 """
 
 import logging
+import unicodedata
 import jellyfish
 
-from config.settings import PHONETIC_SIMILARITY_THRESHOLD
+from config.settings import PHONETIC_SIMILARITY_THRESHOLD, PHONETIC_LENGTH_DIFF_MAX
 from config.banned_words import YASAKLI_KELIMELER
 
 logger = logging.getLogger(__name__)
+
+# Yasaklı kelimeler normalize edilerek önbelleklenir; her çağrıda tekrar hesaplanmaz.
+_BANNED_NORMALIZED: list[str] = [
+    unicodedata.normalize("NFC", w.lower()) for w in YASAKLI_KELIMELER
+]
 
 
 def find_phonetic_match(
@@ -43,7 +49,7 @@ def find_phonetic_match(
         find_phonetic_match("pis")     → ("piç", 0.89)   ← yakalanır
         find_phonetic_match("hiçbir")  → (None, 0.0)     ← geçer
     """
-    word_normalized = word.lower().strip()
+    word_normalized = unicodedata.normalize("NFC", word.lower().strip())
 
     # Çok kısa kelimeleri fonetik karşılaştırmaya sokma.
     # "bu", "o", "biz" gibi 2 karakterli kelimeler "budala" ile
@@ -51,15 +57,18 @@ def find_phonetic_match(
     if len(word_normalized) < 3:
         return None, 0.0
 
+    # Varsayılan listeyle çağrıldıysa önbelleklenmiş normalized versiyonu kullan.
+    if banned_list is YASAKLI_KELIMELER:
+        banned_pairs = zip(YASAKLI_KELIMELER, _BANNED_NORMALIZED)
+    else:
+        banned_pairs = zip(banned_list, (w.lower() for w in banned_list))
+
     best_match: str | None = None
     best_score: float = 0.0
 
-    for banned in banned_list:
-        banned_lower = banned.lower()
-
+    for banned, banned_lower in banned_pairs:
         # Kelime uzunlukları çok farklıysa karşılaştırma yapma.
-        # "bu" (2) ↔ "budala" (6): fark 4 → atla.
-        if abs(len(word_normalized) - len(banned_lower)) > 3:
+        if abs(len(word_normalized) - len(banned_lower)) > PHONETIC_LENGTH_DIFF_MAX:
             continue
 
         score = jellyfish.jaro_winkler_similarity(word_normalized, banned_lower)

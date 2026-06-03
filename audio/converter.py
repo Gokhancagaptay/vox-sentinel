@@ -12,6 +12,7 @@ Araç: pydub + FFmpeg (sistem genelinde kurulu olmalı)
 """
 
 import os
+import shutil
 import tempfile
 import logging
 from pathlib import Path
@@ -23,6 +24,16 @@ logger = logging.getLogger(__name__)
 VOSK_REQUIRED_CHANNELS    = 1       # Mono
 VOSK_REQUIRED_SAMPLE_RATE = 16000   # 16 kHz
 VOSK_REQUIRED_SAMPLE_WIDTH = 2      # 16-bit (2 byte)
+
+
+def check_ffmpeg() -> None:
+    """FFmpeg'in PATH'de erişilebilir olduğunu doğrular."""
+    if shutil.which("ffmpeg") is None:
+        raise RuntimeError(
+            "FFmpeg bulunamadı. pydub MP3/M4A/OGG dönüşümü için FFmpeg gereklidir.\n"
+            "Kurulum: https://ffmpeg.org/download.html\n"
+            "Windows: 'winget install ffmpeg' veya PATH'e eklenmiş binary."
+        )
 
 
 def needs_conversion(audio_file_path: str) -> bool:
@@ -79,7 +90,14 @@ def to_vosk_wav(audio_file_path: str) -> tuple[str, bool]:
         Path(audio_file_path).name,
     )
 
-    audio = AudioSegment.from_file(audio_file_path)
+    check_ffmpeg()
+    try:
+        audio = AudioSegment.from_file(audio_file_path)
+    except Exception as exc:
+        raise RuntimeError(
+            f"Ses dosyası okunamadı: '{audio_file_path}'\n"
+            f"Hata: {exc}"
+        ) from exc
 
     # Mono'ya çevir
     if audio.channels != VOSK_REQUIRED_CHANNELS:

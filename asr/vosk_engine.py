@@ -9,6 +9,7 @@ Elde edilen zaman bilgisi daha sonra time_aligner tarafından
 Whisper zaman eksenine hizalanır.
 """
 
+import os
 import wave
 import json
 import logging
@@ -29,8 +30,20 @@ def _get_model() -> Model:
     """Singleton Vosk modelini döndürür. İlk çağrıda diskten yükler."""
     global _vosk_model
     if _vosk_model is None:
+        if not os.path.exists(VOSK_MODEL_PATH):
+            raise FileNotFoundError(
+                f"Vosk model dizini bulunamadı: '{VOSK_MODEL_PATH}'\n"
+                "Lütfen Turkish Vosk modelini indirip 'model/' klasörüne çıkartın.\n"
+                "İndirme: https://alphacephei.com/vosk/models"
+            )
         logger.info("[VOSK] Model yükleniyor: %s", VOSK_MODEL_PATH)
-        _vosk_model = Model(VOSK_MODEL_PATH)
+        try:
+            _vosk_model = Model(VOSK_MODEL_PATH)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Vosk modeli yüklenemedi: {exc}\n"
+                "Model dizini bozuk veya eksik olabilir."
+            ) from exc
     return _vosk_model
 
 
@@ -52,6 +65,7 @@ def get_word_timestamps(wav_file_path: str) -> list[dict]:
     Raises:
         FileNotFoundError: WAV dosyası bulunamazsa.
         ValueError: Dosya Mono değilse.
+        RuntimeError: Model yüklenemezse.
     """
     model = _get_model()
 
@@ -74,14 +88,25 @@ def get_word_timestamps(wav_file_path: str) -> list[dict]:
                 break
 
             if recognizer.AcceptWaveform(data):
-                result = json.loads(recognizer.Result())
+                try:
+                    result = json.loads(recognizer.Result())
+                except json.JSONDecodeError as exc:
+                    logger.warning("[VOSK] JSON parse hatası (chunk atlandı): %s", exc)
+                    continue
                 _extract_words(result, word_timestamps)
 
         # Dosya sonunda kalan son segment
-        final_result = json.loads(recognizer.FinalResult())
+        try:
+            final_result = json.loads(recognizer.FinalResult())
+        except json.JSONDecodeError as exc:
+            logger.warning("[VOSK] Final JSON parse hatası: %s", exc)
+            final_result = {}
         _extract_words(final_result, word_timestamps)
 
-    logger.debug("[VOSK] %d kelime zaman damgası çıkarıldı.", len(word_timestamps))
+    if not word_timestamps:
+        logger.warning("[VOSK] Hiç kelime zaman damgası çıkarılamadı. Sessiz veya tanınamayan ses.")
+    else:
+        logger.debug("[VOSK] %d kelime zaman damgası çıkarıldı.", len(word_timestamps))
     return word_timestamps
 
 

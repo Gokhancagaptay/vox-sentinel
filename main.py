@@ -3,18 +3,18 @@ VoxSentinel — Çok Katmanlı Türkçe Ses Sansür Sistemi
 =====================================================
 
 Kullanım:
-    python main.py <ses_dosyasi> [cikti_dosyasi]
+    python main.py <ses_dosyasi> [cikti_dosyasi] [--format wav|mp3|ogg]
 
 Örnekler:
     python main.py sansur_test_sesi2.wav
-    python main.py kayit.mp3 temiz_kayit.wav
+    python main.py kayit.mp3 temiz_kayit.mp3 --format mp3
 
 Ortam Değişkeni:
-    OPENAI_API_KEY  → Whisper API kullanımı için gerekli.
-                      Yoksa yalnızca Vosk + fonetik katman çalışır.
+    OPENAI_API_KEY             → Whisper API kullanımı için gerekli.
+    VOXSENTINEL_WHISPER_MODE   → api|local|auto (settings.py varsayılanını override eder)
 
 Mimari (3 Katman):
-    Katman 1  Vosk (zaman) + Whisper API (transkripsiyon) + Fonetik (OOV)
+    Katman 1  Vosk (zaman) + Whisper (transkripsiyon) + Fonetik (OOV)
     Katman 2  Zaman hizalama + Çok-kaynaklı oylama
     Katman 3  FFmpeg/pydub bip ekleme
 """
@@ -47,6 +47,24 @@ def _print_banner() -> None:
     print()
 
 
+def _print_startup_info(mode: str, whisper_source: str, model_size: str) -> None:
+    """Başlangıçta kullanılan konfigürasyonu raporla."""
+    from config.settings import VOSK_MODEL_PATH, PHONETIC_SIMILARITY_THRESHOLD
+    from config.banned_words import YASAKLI_KELIMELER
+    import shutil
+
+    ffmpeg_ok = shutil.which("ffmpeg") is not None
+
+    print(f"  Whisper modu      : {mode.upper()} → {whisper_source}")
+    if whisper_source == "local":
+        print(f"  Yerel model boyutu: {model_size}")
+    print(f"  Vosk model yolu   : {VOSK_MODEL_PATH}")
+    print(f"  Yasaklı kelimeler : {len(YASAKLI_KELIMELER)} adet")
+    print(f"  Fonetik eşik      : {PHONETIC_SIMILARITY_THRESHOLD}")
+    print(f"  FFmpeg            : {'OK' if ffmpeg_ok else 'BULUNAMADI!'}")
+    print()
+
+
 def _print_result_summary(result) -> None:
     print()
     print("-" * 60)
@@ -61,6 +79,12 @@ def _print_result_summary(result) -> None:
     print("-" * 60)
 
     if result.final_censor_segments:
+        from config.banned_words import agirlik_sayaci
+        tum_tespitler = result.whisper_detections + result.phonetic_detections
+        sayac = agirlik_sayaci(tum_tespitler)
+
+        print()
+        print(f"  Seviye dagılımı: Agir={sayac['yuksek']}  Orta={sayac['orta']}  Hafif={sayac['dusuk']}")
         print()
         print("  Sansürlenen Kelimeler:")
         for seg in result.final_censor_segments:
@@ -89,38 +113,63 @@ def main(argv: list[str] = sys.argv[1:]) -> int:
     _print_banner()
 
     # ── Argüman işleme ────────────────────────────────────────────
-    if not argv:
-        print("Kullanım: python main.py <ses_dosyasi> [cikti_dosyasi]")
+    # --format çıktı formatı (isteğe bağlı)
+    output_format: str | None = None
+    args = list(argv)
+    if "--format" in args:
+        fmt_idx = args.index("--format")
+        if fmt_idx + 1 < len(args):
+            output_format = args[fmt_idx + 1].lower().strip(".")
+            del args[fmt_idx:fmt_idx + 2]
+        else:
+            print("HATA: --format bayrağından sonra format belirtilmedi (wav|mp3|ogg).")
+            return 1
+
+    if not args:
+        print("Kullanım: python main.py <ses_dosyasi> [cikti_dosyasi] [--format wav|mp3|ogg]")
         print("Örnek   : python main.py sansur_test_sesi2.wav")
+        print("Örnek   : python main.py kayit.mp3 temiz.mp3 --format mp3")
         return 1
 
-    audio_file = argv[0]
+    audio_file = args[0]
     if not Path(audio_file).exists():
         print(f"HATA: '{audio_file}' dosyası bulunamadı.")
         return 1
 
-    # Çıkış dosyasını belirle: verilmezse girişin yanına "_sansurlu" ekle
-    if len(argv) >= 2:
-        output_file = argv[1]
+    # Çıkış dosyasını belirle
+    if len(args) >= 2:
+        output_file = args[1]
     else:
+        ext = output_format or "wav"
         stem = Path(audio_file).stem
-        output_file = f"{stem}_sansurlu.wav"
+        output_file = f"{stem}_sansurlu.{ext}"
 
-    # ── Whisper mod belirleme ─────────────────────────────────────
+    # --format ile çıkış yolu uzantısı çelişiyorsa uzantıyı düzelt
+    if output_format:
+        out_path = Path(output_file)
+        if out_path.suffix.lower().lstrip(".") != output_format:
+            output_file = str(out_path.with_suffix(f".{output_format}"))
+
+    # ── Whisper kaynak belirleme (pipeline.py mantığını burada tekrar çalıştırmıyoruz) ──
     from config.settings import WHISPER_MODE, WHISPER_LOCAL_MODEL_SIZE
     has_openai_key = bool(os.environ.get("OPENAI_API_KEY"))
-    use_whisper = True  # Yerel mod her zaman kullanılabilir
+    use_whisper = True
 
     mode = WHISPER_MODE.lower()
     if mode == "api" and not has_openai_key:
         print("UYARI: WHISPER_MODE='api' ama OPENAI_API_KEY bulunamadi.")
-        print("       settings.py'de WHISPER_MODE='local' yapın veya API anahtarı girin.\n")
-        use_whisper = False
-    elif mode == "auto" and not has_openai_key:
-        print(f"[BİLGİ] API anahtarı yok → Yerel Whisper (model: {WHISPER_LOCAL_MODEL_SIZE}) kullanılıyor.")
-        print("        Model ilk çalıştırmada indirilecek (~150MB base için).\n")
+        print("       Yerel mod devreye alınıyor.\n")
+        whisper_source = "local"
     elif mode == "local" or (mode == "auto" and not has_openai_key):
-        print(f"[BİLGİ] Yerel Whisper aktif (model: {WHISPER_LOCAL_MODEL_SIZE})\n")
+        whisper_source = "local"
+        print(f"[BİLGİ] Yerel Whisper aktif (model: {WHISPER_LOCAL_MODEL_SIZE})")
+        if mode == "auto":
+            print("        Model ilk çalıştırmada indirilecek.")
+        print()
+    else:
+        whisper_source = "api"
+
+    _print_startup_info(mode, whisper_source, WHISPER_LOCAL_MODEL_SIZE)
 
     # ── Boru hattını çalıştır ────────────────────────────────────
     try:
@@ -133,6 +182,9 @@ def main(argv: list[str] = sys.argv[1:]) -> int:
         )
     except FileNotFoundError as exc:
         print(f"HATA: {exc}")
+        return 1
+    except KeyboardInterrupt:
+        print("\nİptal edildi.")
         return 1
     except Exception as exc:
         logger.exception("Beklenmeyen hata: %s", exc)

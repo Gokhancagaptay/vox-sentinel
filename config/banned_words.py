@@ -6,60 +6,85 @@ KURAL: Yalnızca KÖK kelimeleri ekleyin.
   - Türevler, ekler, çoğullar OTOMATİK yakalanır (alt-dize kontrolü).
   - Fonetik benzerler OTOMATİK yakalanır (Jaro-Winkler).
   Örnek: "sik" eklenince → siki, sikiş, sikik, sikerim, sikeyim hepsi yakalanır.
+
+Ağırlık seviyeleri:
+  "yuksek" — Ağır cinsel/bedensel küfürler (her koşulda sansür)
+  "orta"   — Hakaret / aşağılama
+  "dusuk"  — Hafif hakaret / alay
+
+YASAKLI_KELIMELER: geriye dönük uyumlu düz liste (mevcut pipeline kullanır)
+YASAKLI_AGIRLIKLI: {kelime: seviye} dict — raporlama ve öncelik için
 """
 
-YASAKLI_KELIMELER: list[str] = [
+# Ağırlıklı sözlük: {kök_kelime: seviye}
+YASAKLI_AGIRLIKLI: dict[str, str] = {
 
-    # ══════════════════════════════════════════════════════════════
-    # KATEGORİ 1 — Ağır cinsel/bedensel küfürler
-    # ══════════════════════════════════════════════════════════════
-    "piç",          # piçoş, piçlik, piçler → alt-dize ile yakalanır
-    "sik",          # siki, sikiş, sikik, sikerim, sikeyim, siktiret
-    "orospu",       # orosbuçuk, orospular, orospulaştı
-    "göt",          # götlek, götveren, götlük
-    "amına",        # amk, amcık kökleriyle ilgili
-    "amk",
-    "amcık",
-    "yarrak",       # yarrağı, yarrağına
-    "dalyarak",
-    "taşak",        # taşağına
-    "oç",
-    "orosbuçuk",
+    # ── Ağır cinsel/bedensel küfürler ─────────────────────────────
+    "piç":       "yuksek",   # piçoş, piçlik, piçler
+    "sik":       "yuksek",   # siki, sikiş, sikik, sikerim, sikeyim
+    "orospu":    "yuksek",   # orosbuçuk, orospular
+    "göt":       "yuksek",   # götlek, götveren, götlük
+    "amına":     "yuksek",   # amk, amcık kökleriyle ilgili
+    "amk":       "yuksek",
+    "amcık":     "yuksek",
+    "yarrak":    "yuksek",   # yarrağı, yarrağına
+    "dalyarak":  "yuksek",
+    "taşak":     "yuksek",   # taşağına
+    "oç":        "yuksek",
+    "orosbuçuk": "yuksek",
 
-    # ══════════════════════════════════════════════════════════════
-    # KATEGORİ 2 — Hakaret / aşağılama
-    # ══════════════════════════════════════════════════════════════
-    "kahpe",        # kahpeler, kahpelik
-    "ibne",         # ibneler, ibnelik
-    "bok",          # boktan, boklu, bokluk
+    # ── Hakaret / aşağılama ────────────────────────────────────────
     # NOT: "it" eklenmedi — 2 karakter, çok sık yanlış alarm verir
-    "şerefsiz",
-    "namussuz",
-    "alçak",
-    "aşağılık",
-    "rezil",
-    "haysiyetsiz",
-    "şıllık",       # argo hakaret
-    "pezevenk",     # pezevenk → türevler
-    "kereste",      # argo hakaret
-    "sürtük",
-    "dangalak",
+    "kahpe":      "orta",    # kahpeler, kahpelik
+    "ibne":       "orta",    # ibneler, ibnelik
+    "bok":        "orta",    # boktan, boklu, bokluk
+    "şerefsiz":   "orta",
+    "namussuz":   "orta",
+    "alçak":      "orta",
+    "aşağılık":   "orta",
+    "rezil":      "orta",
+    "haysiyetsiz":"orta",
+    "şıllık":     "orta",    # argo hakaret
+    "pezevenk":   "orta",
+    "kereste":    "orta",    # argo hakaret
+    "sürtük":     "orta",
+    "dangalak":   "orta",
 
-    # ══════════════════════════════════════════════════════════════
-    # KATEGORİ 3 — Hafif hakaret / alay
-    # ══════════════════════════════════════════════════════════════
-    "aptal",        # aptallık, aptallar
-    "salak",        # salaklık
-    "gerizekalı",
+    # ── Hafif hakaret / alay ───────────────────────────────────────
     # NOT: "mal" eklenmedi — malzeme, maliyet gibi kelimelerle çakışır
-    "ahmak",
-    "budala",
-    "serseri",
-    "ezik",         # ezikler, eziklik
-    "avanak",
-    "manyak",       # manyaklar, manyaklık
     # NOT: "deli" eklenmedi — delil, delik gibi masum kelimelerle çakışır
-    "saloz",        # kaba argo
-    "hödük",
-    "göbelek",      # argo
-]
+    "aptal":      "dusuk",   # aptallık, aptallar
+    "salak":      "dusuk",   # salaklık
+    "gerizekalı": "dusuk",
+    "ahmak":      "dusuk",
+    "budala":     "dusuk",
+    "serseri":    "dusuk",
+    "ezik":       "dusuk",   # ezikler, eziklik
+    "avanak":     "dusuk",
+    "manyak":     "dusuk",   # manyaklar, manyaklık
+    "saloz":      "dusuk",   # kaba argo
+    "hödük":      "dusuk",
+    "göbelek":    "dusuk",   # argo
+}
+
+# Geriye dönük uyumlu düz liste — mevcut pipeline bu listeyi kullanır
+YASAKLI_KELIMELER: list[str] = list(YASAKLI_AGIRLIKLI.keys())
+
+
+def agirlik_sayaci(tespitler: list[dict]) -> dict[str, int]:
+    """
+    Tespit listesindeki kelimeleri seviyeye göre say.
+
+    Args:
+        tespitler: voting_engine veya phonetic_matcher çıktısı.
+                   Her eleman {"matched_banned": ...} içermeli.
+
+    Returns:
+        {"yuksek": n, "orta": n, "dusuk": n}
+    """
+    sayac: dict[str, int] = {"yuksek": 0, "orta": 0, "dusuk": 0}
+    for det in tespitler:
+        kelime = det.get("matched_banned", "")
+        seviye = YASAKLI_AGIRLIKLI.get(kelime, "dusuk")
+        sayac[seviye] = sayac.get(seviye, 0) + 1
+    return sayac

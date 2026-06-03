@@ -12,7 +12,8 @@ Bu modülün görevi:
 3. Fonetik eşleşme tespitlerinin (Vosk zamanında) gerçek ses zamanını
    bulmak için bu haritayı kullanmak.
 
-Algoritma: Greedy LCS (Longest Common Subsequence) tabanlı anchor bulma.
+Algoritma: Dinamik Programlama LCS (Longest Common Subsequence) tabanlı anchor bulma.
+Greedy LCS'nin aksine DP-LCS en uzun ortak alt diziyi kesin olarak bulur.
 """
 
 import logging
@@ -28,9 +29,9 @@ def build_anchor_map(
     """
     İki kelime listesi arasında zaman hizalama referans noktaları oluşturur.
 
-    Her iki listede de aynı kelimeyi içeren çiftler anchor olarak seçilir.
-    Greedy yaklaşım: Vosk listesinde ilerlerken Whisper listesinde ilk
-    metin eşleşmesini arar; bu, ses dosyasının doğrusal yapısını korur.
+    Dinamik programlama ile gerçek LCS (En Uzun Ortak Alt Dizi) bulunur.
+    Greedy yaklaşımın aksine, kelime tekrarları veya sıra değişikliklerinde
+    daha fazla anchor noktası yakalanır.
 
     Args:
         vosk_words    : Vosk'tan gelen kelime listesi.
@@ -38,30 +39,47 @@ def build_anchor_map(
 
     Returns:
         [(vosk_start, whisper_start)] anchor zaman çiftleri listesi.
-        Liste boşsa Vosk zamanları doğrudan kullanılır.
+        Sıralıdır (vosk_start artan). Liste boşsa Vosk zamanları doğrudan kullanılır.
     """
+    n = len(vosk_words)
+    m = len(whisper_words)
+
+    if n == 0 or m == 0:
+        return []
+
+    vosk_texts    = [w["word"].lower().strip() for w in vosk_words]
+    whisper_texts = [w["word"].lower().strip() for w in whisper_words]
+
+    # DP tablosu: dp[i][j] = vosk_texts[:i] ve whisper_texts[:j] LCS uzunluğu
+    dp = [[0] * (m + 1) for _ in range(n + 1)]
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            if vosk_texts[i - 1] == whisper_texts[j - 1]:
+                dp[i][j] = dp[i - 1][j - 1] + 1
+            else:
+                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
+
+    # Geri izleme ile eşleşen indisleri topla
     anchors: list[tuple[float, float]] = []
-    whisper_search_idx = 0  # Whisper tarafında arama başlangıcı
+    i, j = n, m
+    while i > 0 and j > 0:
+        if vosk_texts[i - 1] == whisper_texts[j - 1]:
+            anchors.append((
+                vosk_words[i - 1]["start"],
+                whisper_words[j - 1]["start"],
+            ))
+            i -= 1
+            j -= 1
+        elif dp[i - 1][j] >= dp[i][j - 1]:
+            i -= 1
+        else:
+            j -= 1
 
-    for vosk_word in vosk_words:
-        vosk_text = vosk_word["word"].lower().strip()
-
-        # Whisper listesinde bu kelimeyi ara (ileri yönlü)
-        for w_idx in range(whisper_search_idx, len(whisper_words)):
-            whisper_text = whisper_words[w_idx]["word"].lower().strip()
-
-            if vosk_text == whisper_text:
-                anchors.append((
-                    vosk_word["start"],
-                    whisper_words[w_idx]["start"],
-                ))
-                # Bir sonraki aramayı bu noktanın ötesinden başlat
-                whisper_search_idx = w_idx + 1
-                break
+    anchors.reverse()  # Geri izleme tersten gelir; kronolojik sıraya çevir
 
     logger.debug(
-        "[HİZALAMA] %d Vosk kelimesi, %d Whisper kelimesi → %d anchor bulundu.",
-        len(vosk_words), len(whisper_words), len(anchors),
+        "[HİZALAMA] %d Vosk kelimesi, %d Whisper kelimesi → %d anchor bulundu (DP-LCS).",
+        n, m, len(anchors),
     )
     return anchors
 
@@ -89,7 +107,8 @@ def map_vosk_time_to_whisper(
     """
     if not anchors:
         # Anchor yoksa zaman kayması bilinmiyor; Vosk zamanını kullan
-        return vosk_time
+        logger.debug("[HİZALAMA] Anchor yok; Vosk zamanı doğrudan kullanılıyor: %.3f", vosk_time)
+        return max(0.0, vosk_time)
 
     before = [(v, w) for v, w in anchors if v <= vosk_time]
     after  = [(v, w) for v, w in anchors if v >  vosk_time]
@@ -98,23 +117,27 @@ def map_vosk_time_to_whisper(
         # ─── Doğrusal interpolasyon ───────────────────────────────
         v1, w1 = before[-1]
         v2, w2 = after[0]
-        ratio = (vosk_time - v1) / (v2 - v1) if v2 != v1 else 0.0
-        return w1 + ratio * (w2 - w1)
+        if abs(v2 - v1) < 1e-6:
+            result = w1
+        else:
+            ratio = (vosk_time - v1) / (v2 - v1)
+            result = w1 + ratio * (w2 - w1)
+        return max(0.0, result)
 
     if before:
         # ─── Sol ekstrapolasyon (dosya sonu) ──────────────────────
         v1, w1 = before[-1]
         if len(before) >= 2:
             v0, w0 = before[-2]
-            # İki anchor arasındaki drift oranı (Whisper/Vosk hız farkı)
-            drift = (w1 - w0) / (v1 - v0) if v1 != v0 else 1.0
-            return w1 + (vosk_time - v1) * drift
-        # Tek anchor: sabit kayma varsay (1:1 oranı)
-        return w1 + (vosk_time - v1)
+            drift = (w1 - w0) / (v1 - v0) if abs(v1 - v0) >= 1e-6 else 1.0
+            result = w1 + (vosk_time - v1) * drift
+        else:
+            result = w1 + (vosk_time - v1)
+        return max(0.0, result)
 
     # ─── Sağ ekstrapolasyon (dosya başı) ──────────────────────────
     v1, w1 = after[0]
-    return w1 - (v1 - vosk_time)
+    return max(0.0, w1 - (v1 - vosk_time))
 
 
 def align_phonetic_detections(

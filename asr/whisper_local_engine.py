@@ -42,16 +42,30 @@ def _get_model() -> whisper.Whisper:
     """
     global _local_model
     if _local_model is None:
-        os.makedirs(WHISPER_LOCAL_MODEL_DIR, exist_ok=True)
+        try:
+            os.makedirs(WHISPER_LOCAL_MODEL_DIR, exist_ok=True)
+        except OSError as exc:
+            raise RuntimeError(
+                f"Whisper model dizini oluşturulamadı: '{WHISPER_LOCAL_MODEL_DIR}'\n"
+                f"İzin hatası veya disk sorunu: {exc}"
+            ) from exc
+
         logger.info(
             "[WHISPER LOCAL] '%s' modeli yükleniyor (dizin: %s)...",
             WHISPER_LOCAL_MODEL_SIZE,
             WHISPER_LOCAL_MODEL_DIR,
         )
-        _local_model = whisper.load_model(
-            WHISPER_LOCAL_MODEL_SIZE,
-            download_root=WHISPER_LOCAL_MODEL_DIR,
-        )
+        try:
+            _local_model = whisper.load_model(
+                WHISPER_LOCAL_MODEL_SIZE,
+                download_root=WHISPER_LOCAL_MODEL_DIR,
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                f"Yerel Whisper modeli yüklenemedi (boyut: '{WHISPER_LOCAL_MODEL_SIZE}'): {exc}\n"
+                "Olası nedenler: geçersiz model adı, disk alanı yetersiz, ağ hatası (ilk indirme)."
+            ) from exc
+
         logger.info("[WHISPER LOCAL] Model hazır.")
     return _local_model
 

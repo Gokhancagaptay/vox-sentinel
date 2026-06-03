@@ -30,7 +30,8 @@ from vosk import Model, KaldiRecognizer, SetLogLevel
 
 from config.settings import (
     VOSK_MODEL_PATH,
-    BEEP_FREQUENCY_HZ, BEEP_GAIN_DB, CENSOR_PADDING_MS
+    BEEP_FREQUENCY_HZ, BEEP_GAIN_DB, CENSOR_PADDING_MS,
+    MAX_RECORDING_DURATION_SEC,
 )
 from config.banned_words import YASAKLI_KELIMELER
 from asr.phonetic_matcher import scan_for_phonetic_matches
@@ -168,6 +169,7 @@ def tam_mod():
     print("  Konusmaya baslayin.")
     print("  Durmak icin  -> Enter'a basin")
     print(f"  Veya {SILENCE_SECS:.0f}s sessizlik -> otomatik durur")
+    print(f"  Maksimum kayit suresi: {MAX_RECORDING_DURATION_SEC}s")
     print("=" * 58 + "\n")
 
     try:
@@ -232,6 +234,10 @@ def tam_mod():
                 print(f"\n  [{SILENCE_SECS:.0f}s sessizlik] Kayit durdu.")
                 break
 
+            if time.time() - baslangic >= MAX_RECORDING_DURATION_SEC:
+                print(f"\n  [MAX SURE] {MAX_RECORDING_DURATION_SEC}s limitine ulasildi. Kayit durdu.")
+                break
+
     if not kareler:
         print("  Ses kaydedilemedi.")
         return
@@ -247,85 +253,96 @@ def tam_mod():
     # Vosk formatına dönüştür ve kaydet
     tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False, prefix="vox_mic_")
     tmp.close()
-    _donustur_vosk_wav(ses_verisi, native_sr, tmp.name)
+    tmp_path = tmp.name
+    cikti = Path(tmp_path).stem + "_sansurlu.wav"
 
-    cikti = Path(tmp.name).stem + "_sansurlu.wav"
-    print("\n  [ISLEM] Whisper + Vosk + Fonetik basliyor...")
-    t0 = time.time()
+    try:
+        _donustur_vosk_wav(ses_verisi, native_sr, tmp_path)
 
-    sonuc = run_censorship_pipeline(
-        audio_file_path=tmp.name,
-        output_path=cikti,
-        use_vosk=True,
-        use_whisper=True,
-        use_phonetic=True,
-    )
+        print("\n  [ISLEM] Whisper + Vosk + Fonetik basliyor...")
+        t0 = time.time()
 
-    print(f"  Tamamlandi ({time.time()-t0:.1f}s)")
-    # ── Transkripsiyon raporu ────────────────────────────────────────
-    print("\n" + "=" * 58)
-    print("  TRANSKRIPSIYON RAPORU")
-    print("=" * 58)
+        sonuc = run_censorship_pipeline(
+            audio_file_path=tmp_path,
+            output_path=cikti,
+            use_vosk=True,
+            use_whisper=True,
+            use_phonetic=True,
+        )
 
-    # Hangi kelimelerin sansürlendiğini bul (zaman aralığına göre)
-    def _sansur_mu(start_s: float, end_s: float) -> str | None:
-        """Kelime zaman aralığı bir sansür segmentiyle örtüşüyor mu?"""
-        start_ms = int(start_s * 1000)
-        end_ms   = int(end_s   * 1000)
-        for seg in sonuc.final_censor_segments:
-            if start_ms < seg["end_ms"] and end_ms > seg["start_ms"]:
-                return seg.get("matched_banned", "?")
-        return None
+        print(f"  Tamamlandi ({time.time()-t0:.1f}s)")
+        # ── Transkripsiyon raporu ────────────────────────────────────────
+        print("\n" + "=" * 58)
+        print("  TRANSKRIPSIYON RAPORU")
+        print("=" * 58)
 
-    # Whisper transkripsiyon satırı
-    if sonuc.whisper_words:
-        print("\n  Whisper (tam metin):")
-        tam_metin = " ".join(w["word"] for w in sonuc.whisper_words)
-        print(f"    {tam_metin}\n")
+        # Hangi kelimelerin sansürlendiğini bul (zaman aralığına göre)
+        def _sansur_mu(start_s: float, end_s: float) -> str | None:
+            """Kelime zaman aralığı bir sansür segmentiyle örtüşüyor mu?"""
+            start_ms = int(start_s * 1000)
+            end_ms   = int(end_s   * 1000)
+            for seg in sonuc.final_censor_segments:
+                if start_ms < seg["end_ms"] and end_ms > seg["start_ms"]:
+                    return seg.get("matched_banned", "?")
+            return None
 
-        print("  Kelime detayi  (S=sansurlu, T=temiz):")
-        print(f"  {'Kelime':<20} {'Baslangic':>10} {'Bitis':>10}  Durum")
-        print("  " + "-" * 52)
-        for w in sonuc.whisper_words:
-            eslesme = _sansur_mu(w["start"], w["end"])
-            if eslesme:
-                durum = f"[S] -> '{eslesme}' biplenecek"
-            else:
-                durum = "[T] temiz"
-            print(f"  {w['word']:<20} {w['start']:>9.2f}s {w['end']:>9.2f}s  {durum}")
-    else:
-        print("\n  Whisper cikti uretmedi (cok kisa ses?).")
+        # Whisper transkripsiyon satırı
+        if sonuc.whisper_words:
+            print("\n  Whisper (tam metin):")
+            tam_metin = " ".join(w["word"] for w in sonuc.whisper_words)
+            print(f"    {tam_metin}\n")
 
-    # Vosk özeti
-    if sonuc.vosk_words:
-        vosk_metin = " ".join(w["word"] for w in sonuc.vosk_words)
-        print(f"\n  Vosk (timestamp ref): {vosk_metin}")
+            print("  Kelime detayi  (S=sansurlu, T=temiz):")
+            print(f"  {'Kelime':<20} {'Baslangic':>10} {'Bitis':>10}  Durum")
+            print("  " + "-" * 52)
+            for w in sonuc.whisper_words:
+                eslesme = _sansur_mu(w["start"], w["end"])
+                if eslesme:
+                    durum = f"[S] -> '{eslesme}' biplenecek"
+                else:
+                    durum = "[T] temiz"
+                print(f"  {w['word']:<20} {w['start']:>9.2f}s {w['end']:>9.2f}s  {durum}")
+        else:
+            print("\n  Whisper cikti uretmedi (cok kisa ses?).")
 
-    # Fonetik tespitler
-    if sonuc.phonetic_detections:
-        print(f"\n  Fonetik eslesme ({len(sonuc.phonetic_detections)} adet):")
-        for d in sonuc.phonetic_detections:
-            print(f"    '{d['word']}' ~ '{d.get('matched_banned','?')}'"
-                  f"  (skor={d.get('score',0):.2f})")
+        # Vosk özeti
+        if sonuc.vosk_words:
+            vosk_metin = " ".join(w["word"] for w in sonuc.vosk_words)
+            print(f"\n  Vosk (timestamp ref): {vosk_metin}")
 
-    # Final özet
-    print("\n" + "=" * 58)
-    if sonuc.final_censor_segments:
-        print(f"  SONUC: {len(sonuc.final_censor_segments)} kelime biplendi\n")
-        for seg in sonuc.final_censor_segments:
-            print(f"    [{seg['source']:>22}]  '{seg.get('word','?')}'"
-                  f" -> '{seg.get('matched_banned','?')}'"
-                  f"  ({seg['start_ms']}ms - {seg['end_ms']}ms)")
-        print(f"\n  Sansurlu dosya: {cikti}")
-        print("\n  Oynatiliyor...\n")
-        _ses_cal(cikti)
-    else:
-        print("  SONUC: Kufur tespit edilmedi — temiz kayit.")
-        print("\n  Oynatiliyor...\n")
-        _ses_cal(tmp.name)
+        # Fonetik tespitler
+        if sonuc.phonetic_detections:
+            print(f"\n  Fonetik eslesme ({len(sonuc.phonetic_detections)} adet):")
+            for d in sonuc.phonetic_detections:
+                print(f"    '{d['word']}' ~ '{d.get('matched_banned','?')}'"
+                      f"  (skor={d.get('score',0):.2f})")
 
-    os.unlink(tmp.name)
-    print("=" * 58)
+        # Final özet
+        print("\n" + "=" * 58)
+        if sonuc.final_censor_segments:
+            print(f"  SONUC: {len(sonuc.final_censor_segments)} kelime biplendi\n")
+            for seg in sonuc.final_censor_segments:
+                print(f"    [{seg['source']:>22}]  '{seg.get('word','?')}'"
+                      f" -> '{seg.get('matched_banned','?')}'"
+                      f"  ({seg['start_ms']}ms - {seg['end_ms']}ms)")
+            print(f"\n  Sansurlu dosya: {cikti}")
+            print("\n  Oynatiliyor...\n")
+            _ses_cal(cikti)
+        else:
+            print("  SONUC: Kufur tespit edilmedi — temiz kayit.")
+            print("\n  Oynatiliyor...\n")
+            _ses_cal(tmp_path)
+
+        print("=" * 58)
+
+    finally:
+        # Temp dosyaları her durumda temizle (hata olsa bile)
+        for f in [tmp_path, cikti]:
+            try:
+                if os.path.exists(f):
+                    os.unlink(f)
+            except OSError:
+                pass
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -346,7 +363,12 @@ def akis_modu():
         print(f"  HATA: {e}")
         return
 
-    model = Model(VOSK_MODEL_PATH)
+    try:
+        model = Model(VOSK_MODEL_PATH)
+    except Exception as exc:
+        print(f"  HATA: Vosk modeli yuklenemedi: {exc}")
+        print(f"  Model dizini: {VOSK_MODEL_PATH}")
+        return
     ses_kuyruğu: queue.Queue = queue.Queue()
     biriken: list[np.ndarray] = []
     kare_limiti = int(native_sr * STREAM_SECONDS / 1024)
@@ -376,52 +398,62 @@ def _islem_chunk(kareler: list[np.ndarray], idx: int, model, native_sr: int) -> 
 
     tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False, prefix=f"vox_chunk{idx}_")
     tmp.close()
-    _donustur_vosk_wav(ses, native_sr, tmp.name)
+    tmp_path = tmp.name
+    cikti = tmp_path.replace(".wav", "_sansur.wav")
 
-    # Vosk transkripsiyon
-    rec = KaldiRecognizer(model, VOSK_RATE)
-    rec.SetWords(True)
-    with wave.open(tmp.name, "rb") as wf:
-        while True:
-            data = wf.readframes(4000)
-            if not data:
-                break
-            rec.AcceptWaveform(data)
+    try:
+        _donustur_vosk_wav(ses, native_sr, tmp_path)
 
-    kelimeler = json.loads(rec.FinalResult()).get("result", [])
+        # Vosk transkripsiyon
+        rec = KaldiRecognizer(model, VOSK_RATE)
+        rec.SetWords(True)
+        with wave.open(tmp_path, "rb") as wf:
+            while True:
+                data = wf.readframes(4000)
+                if not data:
+                    break
+                rec.AcceptWaveform(data)
 
-    if not kelimeler:
-        print(f"  [CHUNK {idx}] Sessiz / Anlasılamadı")
-        os.unlink(tmp.name)
-        return
+        try:
+            kelimeler = json.loads(rec.FinalResult()).get("result", [])
+        except json.JSONDecodeError:
+            kelimeler = []
 
-    fonetik = scan_for_phonetic_matches(kelimeler)
+        if not kelimeler:
+            print(f"  [CHUNK {idx}] Sessiz / Anlasılamadı")
+            return
 
-    vosk_direkt = []
-    for w in kelimeler:
-        for banned in YASAKLI_KELIMELER:
-            if banned.lower() in w["word"].lower():
-                vosk_direkt.append({
-                    "word": w["word"], "start": w["start"], "end": w["end"],
-                    "matched_banned": banned, "source": "vosk-direct"
-                })
-                break
+        fonetik = scan_for_phonetic_matches(kelimeler)
 
-    segmentler = vote_and_merge(vosk_direkt, fonetik)
+        vosk_direkt = []
+        for w in kelimeler:
+            for banned in YASAKLI_KELIMELER:
+                if banned.lower() in w["word"].lower():
+                    vosk_direkt.append({
+                        "word": w["word"], "start": w["start"], "end": w["end"],
+                        "matched_banned": banned, "source": "vosk-direct"
+                    })
+                    break
 
-    if segmentler:
-        cikti = tmp.name.replace(".wav", "_sansur.wav")
-        apply_censor_beeps(tmp.name, segmentler, cikti)
-        bulunanlar = [f"'{s.get('word','?')}'" for s in segmentler]
-        print(f"  [CHUNK {idx}] TESPIT: {', '.join(bulunanlar)} → biplendi")
-        _ses_cal(cikti)
-        os.unlink(cikti)
-    else:
-        metin = " ".join(w["word"] for w in kelimeler)
-        print(f"  [CHUNK {idx}] Temiz: '{metin}'")
-        _ses_cal(tmp.name)
+        segmentler = vote_and_merge(vosk_direkt, fonetik)
 
-    os.unlink(tmp.name)
+        if segmentler:
+            apply_censor_beeps(tmp_path, segmentler, cikti)
+            bulunanlar = [f"'{s.get('word','?')}'" for s in segmentler]
+            print(f"  [CHUNK {idx}] TESPIT: {', '.join(bulunanlar)} → biplendi")
+            _ses_cal(cikti)
+        else:
+            metin = " ".join(w["word"] for w in kelimeler)
+            print(f"  [CHUNK {idx}] Temiz: '{metin}'")
+            _ses_cal(tmp_path)
+
+    finally:
+        for f in [tmp_path, cikti]:
+            try:
+                if os.path.exists(f):
+                    os.unlink(f)
+            except OSError:
+                pass
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
