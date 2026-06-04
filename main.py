@@ -81,11 +81,14 @@ def _print_result_summary(result) -> None:
 
     if result.final_censor_segments:
         from config.banned_words import agirlik_sayaci
+
         tum_tespitler = result.whisper_detections + result.phonetic_detections
         sayac = agirlik_sayaci(tum_tespitler)
 
         print()
-        print(f"  Seviye dagılımı: Agir={sayac['yuksek']}  Orta={sayac['orta']}  Hafif={sayac['dusuk']}")
+        print(
+            f"  Seviye dagılımı: Agir={sayac['yuksek']}  Orta={sayac['orta']}  Hafif={sayac['dusuk']}"
+        )
         print()
         print("  Sansürlenen Kelimeler:")
         for seg in result.final_censor_segments:
@@ -121,7 +124,7 @@ def main(argv: list[str] = sys.argv[1:]) -> int:
         fmt_idx = args.index("--format")
         if fmt_idx + 1 < len(args):
             output_format = args[fmt_idx + 1].lower().strip(".")
-            del args[fmt_idx:fmt_idx + 2]
+            del args[fmt_idx : fmt_idx + 2]
         else:
             print("HATA: --format bayrağından sonra format belirtilmedi (wav|mp3|ogg).")
             return 1
@@ -153,6 +156,7 @@ def main(argv: list[str] = sys.argv[1:]) -> int:
 
     # ── Whisper kaynak belirleme (pipeline.py mantığını burada tekrar çalıştırmıyoruz) ──
     from config.settings import WHISPER_LOCAL_MODEL_SIZE, WHISPER_MODE
+
     has_openai_key = bool(os.environ.get("OPENAI_API_KEY"))
     use_whisper = True
 

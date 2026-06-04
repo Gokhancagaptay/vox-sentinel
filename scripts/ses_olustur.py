@@ -1,12 +1,12 @@
 """Google TTS ile test MP3 üretir (gTTS; requirements-dev.txt)."""
+
 import _bootstrap_path  # noqa: F401
 from gtts import gTTS
 
 ROOT = _bootstrap_path.PROJECT_ROOT
 
 metin = (
-    "Merhaba. Bu çok sik ve piç bir test kaydıdır. "
-    "Lütfen bu kötü kelimeleri sistemden sansürle."
+    "Merhaba. Bu çok sik ve piç bir test kaydıdır. " "Lütfen bu kötü kelimeleri sistemden sansürle."
 )
 
 print("Google TTS ile test sesi oluşturuluyor...")

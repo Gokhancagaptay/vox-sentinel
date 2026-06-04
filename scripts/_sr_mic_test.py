@@ -1,4 +1,5 @@
 """SpeechRecognition kütüphanesi ile mikrofon erişim testi."""
+
 import io
 import sys
 

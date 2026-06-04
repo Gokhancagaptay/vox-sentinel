@@ -4,6 +4,7 @@ Testler: config/settings.py
 - Değerler makul aralıkta
 - Env var override çalışıyor
 """
+
 import importlib
 import os
 
@@ -15,6 +16,7 @@ def _reload_settings(env_override=None):
         os.environ.update(env_override)
     try:
         import config.settings as s
+
         importlib.reload(s)
         return s
     finally:
@@ -26,6 +28,7 @@ class TestSettingsDefaults:
 
     def setup_method(self):
         import config.settings as s
+
         self.s = s
 
     def test_whisper_mode_gecerli(self):

@@ -4,6 +4,7 @@ Testler: config/banned_words.py
 - YASAKLI_AGIRLIKLI seviye tutarlılığı
 - agirlik_sayaci() doğruluğu
 """
+
 import pytest
 
 from config.banned_words import (
@@ -40,11 +41,11 @@ def test_agirlik_sayaci_bos():
 
 def test_agirlik_sayaci_karisik():
     tespitler = [
-        {"matched_banned": "sik"},       # yuksek
-        {"matched_banned": "piç"},       # yuksek
-        {"matched_banned": "kahpe"},     # orta
-        {"matched_banned": "aptal"},     # dusuk
-        {"matched_banned": "aptal"},     # dusuk (tekrar)
+        {"matched_banned": "sik"},  # yuksek
+        {"matched_banned": "piç"},  # yuksek
+        {"matched_banned": "kahpe"},  # orta
+        {"matched_banned": "aptal"},  # dusuk
+        {"matched_banned": "aptal"},  # dusuk (tekrar)
     ]
     sayac = agirlik_sayaci(tespitler)
     assert sayac["yuksek"] == 2

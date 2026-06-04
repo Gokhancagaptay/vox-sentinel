@@ -57,7 +57,7 @@ def _get_model():
         _fw_model = WhisperModel(
             WHISPER_LOCAL_MODEL_SIZE,
             device="cpu",
-            compute_type="int8",           # CPU için INT8 quantization
+            compute_type="int8",  # CPU için INT8 quantization
             download_root=_FW_MODEL_DIR,
         )
         logger.info("[FASTER-WHISPER] Model hazır.")
@@ -79,6 +79,7 @@ def transcribe_with_timestamps(
         [{"word": str, "start": float, "end": float}, ...]
     """
     import os
+
     if not os.path.exists(audio_file_path):
         raise FileNotFoundError(f"Ses dosyası bulunamadı: '{audio_file_path}'")
 
@@ -94,9 +95,7 @@ def transcribe_with_timestamps(
     duration_sec = _get_audio_duration(audio_file_path)
 
     if duration_sec > WHISPER_CHUNK_THRESHOLD_SEC:
-        logger.info(
-            "[FASTER-WHISPER] Uzun dosya (%.1fs); parçalı işleme...", duration_sec
-        )
+        logger.info("[FASTER-WHISPER] Uzun dosya (%.1fs); parçalı işleme...", duration_sec)
         words = _transcribe_chunked(model, audio_file_path, language)
     else:
         words = _transcribe_single(model, audio_file_path, language)
@@ -115,7 +114,7 @@ def _transcribe_single(
         audio_file_path,
         language=language or "tr",
         word_timestamps=True,
-        vad_filter=True,           # Sessiz bölgeleri atla (hız kazanımı)
+        vad_filter=True,  # Sessiz bölgeleri atla (hız kazanımı)
         vad_parameters={"min_silence_duration_ms": 500},
     )
 
@@ -125,11 +124,13 @@ def _transcribe_single(
             for w in segment.words:
                 clean = w.word.strip()
                 if clean:
-                    words.append({
-                        "word":  clean,
-                        "start": float(w.start),
-                        "end":   float(w.end),
-                    })
+                    words.append(
+                        {
+                            "word": clean,
+                            "start": float(w.start),
+                            "end": float(w.end),
+                        }
+                    )
     return words
 
 
@@ -145,9 +146,9 @@ def _transcribe_chunked(
     from pydub import AudioSegment
 
     audio = AudioSegment.from_file(audio_file_path)
-    chunk_ms   = int(WHISPER_CHUNK_DURATION_SEC * 1000)
-    overlap_ms = int(WHISPER_CHUNK_OVERLAP_SEC  * 1000)
-    stride_ms  = chunk_ms - overlap_ms
+    chunk_ms = int(WHISPER_CHUNK_DURATION_SEC * 1000)
+    overlap_ms = int(WHISPER_CHUNK_OVERLAP_SEC * 1000)
+    stride_ms = chunk_ms - overlap_ms
 
     all_words: list[dict[str, Any]] = []
     offset_ms = 0
@@ -156,8 +157,7 @@ def _transcribe_chunked(
         chunk = audio[offset_ms : offset_ms + chunk_ms]
         chunk_start_sec = offset_ms / 1000.0
 
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False,
-                                         prefix="fw_chunk_") as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False, prefix="fw_chunk_") as tmp:
             chunk.export(tmp.name, format="wav")
             tmp_path = tmp.name
 
@@ -167,11 +167,13 @@ def _transcribe_chunked(
             os.unlink(tmp_path)
 
         for w in chunk_words:
-            all_words.append({
-                "word":  w["word"],
-                "start": w["start"] + chunk_start_sec,
-                "end":   w["end"]   + chunk_start_sec,
-            })
+            all_words.append(
+                {
+                    "word": w["word"],
+                    "start": w["start"] + chunk_start_sec,
+                    "end": w["end"] + chunk_start_sec,
+                }
+            )
 
         offset_ms += stride_ms
 
@@ -193,5 +195,6 @@ def _dedup_words_by_time(words: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def _get_audio_duration(audio_file_path: str) -> float:
     """Ses dosyasının süresini saniye cinsinden döndürür."""
     from pydub import AudioSegment
+
     audio = AudioSegment.from_file(audio_file_path)
     return len(audio) / 1000.0

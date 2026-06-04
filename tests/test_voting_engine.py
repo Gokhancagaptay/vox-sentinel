@@ -4,6 +4,7 @@ Testler: decision/voting_engine.py
 - vote_and_merge(): birleştirme, çakışma, sıralama
 - _normalize(), _fuzzy_threshold_for()
 """
+
 from decision.voting_engine import (
     _fuzzy_threshold_for,
     _normalize,
@@ -17,6 +18,7 @@ def _word(w, start, end):
 
 
 # ── _normalize ────────────────────────────────────────────────────────────────
+
 
 class TestNormalize:
 
@@ -32,6 +34,7 @@ class TestNormalize:
 
 
 # ── _fuzzy_threshold_for ─────────────────────────────────────────────────────
+
 
 class TestFuzzyThreshold:
 
@@ -53,6 +56,7 @@ class TestFuzzyThreshold:
 
 
 # ── find_whisper_banned_words ─────────────────────────────────────────────────
+
 
 class TestFindWhisperBannedWords:
 
@@ -102,11 +106,17 @@ class TestFindWhisperBannedWords:
 
 # ── vote_and_merge ────────────────────────────────────────────────────────────
 
+
 class TestVoteAndMerge:
 
     def _det(self, start_s, end_s, word="test", matched="aptal", source="whisper"):
-        return {"start": start_s, "end": end_s, "word": word,
-                "matched_banned": matched, "source": source}
+        return {
+            "start": start_s,
+            "end": end_s,
+            "word": word,
+            "matched_banned": matched,
+            "source": source,
+        }
 
     def test_bos_girdi(self):
         assert vote_and_merge([], []) == []

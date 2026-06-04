@@ -1,4 +1,5 @@
 """Vosk kelime zamanları + pydub bip ile basit dosya sansürü (tek katmanlı örnek)."""
+
 import json
 import sys
 import wave

@@ -1,6 +1,7 @@
 """
 pytest konfigürasyonu — proje kökünü sys.path'e ekler.
 """
+
 import sys
 from pathlib import Path
 
@@ -16,7 +17,7 @@ def fake_vosk_words():
     """Temiz (yasaklı kelime içermeyen) Vosk çıktısı."""
     return [
         {"word": "merhaba", "start": 0.10, "end": 0.50, "conf": 0.90},
-        {"word": "dünya",   "start": 1.00, "end": 1.40, "conf": 0.85},
+        {"word": "dünya", "start": 1.00, "end": 1.40, "conf": 0.85},
     ]
 
 
@@ -25,7 +26,7 @@ def fake_whisper_words():
     """Temiz (yasaklı kelime içermeyen) Whisper çıktısı."""
     return [
         {"word": "merhaba", "start": 0.12, "end": 0.52},
-        {"word": "dünya",   "start": 1.02, "end": 1.42},
+        {"word": "dünya", "start": 1.02, "end": 1.42},
     ]
 
 
@@ -34,7 +35,7 @@ def banned_whisper_words():
     """'aptal' yasaklı kelimesini içeren Whisper çıktısı."""
     return [
         {"word": "merhaba", "start": 0.12, "end": 0.52},
-        {"word": "aptal",   "start": 1.02, "end": 1.42},
+        {"word": "aptal", "start": 1.02, "end": 1.42},
     ]
 
 
@@ -43,5 +44,5 @@ def phonetic_vosk_words():
     """'aptal' içeren Vosk çıktısı (fonetik tespit için)."""
     return [
         {"word": "merhaba", "start": 0.10, "end": 0.50, "conf": 0.90},
-        {"word": "aptal",   "start": 1.00, "end": 1.40, "conf": 0.70},
+        {"word": "aptal", "start": 1.00, "end": 1.40, "conf": 0.70},
     ]

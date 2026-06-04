@@ -1,4 +1,5 @@
 """Mikrofon izni verildi mi? Kısa kayıt testi."""
+
 import io
 import sys
 

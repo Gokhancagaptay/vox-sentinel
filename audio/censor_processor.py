@@ -27,7 +27,9 @@ from config.settings import (
 logger = logging.getLogger(__name__)
 
 
-def _merge_overlapping(segments: list[dict[str, Any]], audio_duration_ms: int) -> list[dict[str, Any]]:
+def _merge_overlapping(
+    segments: list[dict[str, Any]], audio_duration_ms: int
+) -> list[dict[str, Any]]:
     """
     Padding uygulandıktan sonra çakışan veya bitişik segmentleri birleştirir.
     Giriş listesi start_ms'e göre sıralı olmalıdır.
@@ -35,12 +37,13 @@ def _merge_overlapping(segments: list[dict[str, Any]], audio_duration_ms: int) -
     merged: list[dict] = []
     for seg in segments:
         start_ms = max(0, seg["start_ms"] - CENSOR_PADDING_MS)
-        end_ms   = min(audio_duration_ms, seg["end_ms"] + CENSOR_PADDING_MS)
+        end_ms = min(audio_duration_ms, seg["end_ms"] + CENSOR_PADDING_MS)
 
         if end_ms - start_ms < MIN_SEGMENT_DURATION_MS:
             logger.warning(
                 "[SES] Minimum sürenin altındaki segment atlandı: start=%d end=%d",
-                start_ms, end_ms,
+                start_ms,
+                end_ms,
             )
             continue
 
@@ -85,9 +88,7 @@ def apply_censor_beeps(
     try:
         audio = AudioSegment.from_file(audio_file_path)
     except (CouldntDecodeError, FileNotFoundError, OSError) as exc:
-        raise RuntimeError(
-            f"Ses dosyası yüklenemedi: '{audio_file_path}'\nHata: {exc}"
-        ) from exc
+        raise RuntimeError(f"Ses dosyası yüklenemedi: '{audio_file_path}'\nHata: {exc}") from exc
 
     audio_duration_ms = len(audio)
 
@@ -108,7 +109,7 @@ def apply_censor_beeps(
 
     for segment in active_segments:
         start_ms = segment["start_ms"]
-        end_ms   = segment["end_ms"]
+        end_ms = segment["end_ms"]
         duration_ms = end_ms - start_ms
 
         # Sansür öncesi temiz ses bölümü
@@ -116,16 +117,16 @@ def apply_censor_beeps(
 
         # Bip sesi
         beep = (
-            Sine(BEEP_FREQUENCY_HZ)
-            .to_audio_segment(duration=duration_ms)
-            .apply_gain(BEEP_GAIN_DB)
+            Sine(BEEP_FREQUENCY_HZ).to_audio_segment(duration=duration_ms).apply_gain(BEEP_GAIN_DB)
         )
         result += beep
         prev_end = end_ms
 
         logger.debug(
             "[SES] Sansür uygulandı: %dms → %dms ('%s')",
-            start_ms, end_ms, segment.get("word", "?"),
+            start_ms,
+            end_ms,
+            segment.get("word", "?"),
         )
 
     # Son temiz bölüm

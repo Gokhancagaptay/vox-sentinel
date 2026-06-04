@@ -48,6 +48,7 @@ def _resolve_whisper_transcriber() -> tuple[Callable[..., list[dict[str, Any]]],
 
     if mode == "api":
         from asr.whisper_engine import transcribe_with_timestamps
+
         return transcribe_with_timestamps, "api"
 
     if mode == "local":
@@ -56,6 +57,7 @@ def _resolve_whisper_transcriber() -> tuple[Callable[..., list[dict[str, Any]]],
     # mode == "auto": API anahtarı varsa API, yoksa yerel
     if os.environ.get("OPENAI_API_KEY"):
         from asr.whisper_engine import transcribe_with_timestamps
+
         return transcribe_with_timestamps, "api"
 
     return _resolve_local_transcriber()
@@ -69,6 +71,7 @@ def _resolve_local_transcriber() -> tuple[Callable[..., list[dict[str, Any]]], s
     if WHISPER_LOCAL_BACKEND == "faster-whisper":
         try:
             from asr.faster_whisper_engine import transcribe_with_timestamps
+
             return transcribe_with_timestamps, "faster-whisper"
         except ImportError:
             logger.warning(
@@ -77,6 +80,7 @@ def _resolve_local_transcriber() -> tuple[Callable[..., list[dict[str, Any]]], s
             )
 
     from asr.whisper_local_engine import transcribe_with_timestamps
+
     return transcribe_with_timestamps, "local"
 
 
@@ -86,14 +90,15 @@ class PipelineResult:
     Boru hattı çalışmasının tüm ara ve son sonuçlarını taşır.
     Hata ayıklama ve raporlama için her katmanın çıktısı saklanır.
     """
-    vosk_words:              list[dict] = field(default_factory=list)
-    whisper_words:           list[dict] = field(default_factory=list)
-    phonetic_detections:     list[dict] = field(default_factory=list)
-    whisper_detections:      list[dict] = field(default_factory=list)
-    anchor_count:            int = 0
-    final_censor_segments:   list[dict] = field(default_factory=list)
-    output_file:             str | None = None
-    censored:                bool = False
+
+    vosk_words: list[dict] = field(default_factory=list)
+    whisper_words: list[dict] = field(default_factory=list)
+    phonetic_detections: list[dict] = field(default_factory=list)
+    whisper_detections: list[dict] = field(default_factory=list)
+    anchor_count: int = 0
+    final_censor_segments: list[dict] = field(default_factory=list)
+    output_file: str | None = None
+    censored: bool = False
 
 
 def run_censorship_pipeline(
@@ -133,8 +138,13 @@ def run_censorship_pipeline(
 
     try:
         _run_pipeline_layers(
-            result, audio_file_path, vosk_wav_path,
-            output_path, use_vosk, use_whisper, use_phonetic,
+            result,
+            audio_file_path,
+            vosk_wav_path,
+            output_path,
+            use_vosk,
+            use_whisper,
+            use_phonetic,
         )
     finally:
         # Geçici WAV dosyasını her durumda temizle (hata olsa bile)
@@ -163,8 +173,13 @@ async def run_censorship_pipeline_async(
 
     try:
         await _run_pipeline_layers_async(
-            result, audio_file_path, vosk_wav_path,
-            output_path, use_vosk, use_whisper, use_phonetic,
+            result,
+            audio_file_path,
+            vosk_wav_path,
+            output_path,
+            use_vosk,
+            use_whisper,
+            use_phonetic,
         )
     finally:
         await asyncio.to_thread(cleanup_temp_wav, vosk_wav_path, is_temp_wav)
@@ -278,13 +293,12 @@ def _run_pipeline_layers(
     # ── Whisper (API veya Yerel): Doğru transkripsiyon + zaman damgaları ──
     if use_whisper:
         transcribe_fn, whisper_source = _resolve_whisper_transcriber()
-        logger.info(
-            "── KATMAN 1 | WHISPER [%s] ──────────────────────────", whisper_source.upper()
-        )
+        logger.info("── KATMAN 1 | WHISPER [%s] ──────────────────────────", whisper_source.upper())
         result.whisper_words = transcribe_fn(audio_file_path)
         logger.info(
             "[WHISPER %s] %d kelime transkribe edildi.",
-            whisper_source.upper(), len(result.whisper_words),
+            whisper_source.upper(),
+            len(result.whisper_words),
         )
 
     # ── Fonetik eşleştirici: Vosk OOV tespiti ──────────────────────
@@ -317,18 +331,14 @@ def _run_pipeline_layers(
         result.anchor_count = len(anchors)
         logger.info("[HİZALAMA] %d anchor nokta bulundu.", result.anchor_count)
 
-        aligned_phonetic = align_phonetic_detections(
-            result.phonetic_detections, anchors
-        )
+        aligned_phonetic = align_phonetic_detections(result.phonetic_detections, anchors)
 
     # ── Çok-kaynaklı oylama → final sansür listesi ─────────────────
     result.final_censor_segments = vote_and_merge(
         result.whisper_detections,
         aligned_phonetic,
     )
-    logger.info(
-        "[OYLAMA] %d segment sansürlenecek.", len(result.final_censor_segments)
-    )
+    logger.info("[OYLAMA] %d segment sansürlenecek.", len(result.final_censor_segments))
 
     # ═══════════════════════════════════════════════════════════════
     # KATMAN 3 — Ses Sansür İşlemi

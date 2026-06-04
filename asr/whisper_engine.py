@@ -85,16 +85,17 @@ def transcribe_with_timestamps(
         except openai.OpenAIError as exc:
             last_exc = exc
             if attempt < WHISPER_RETRY_MAX:
-                wait = 2 ** attempt
+                wait = 2**attempt
                 logger.warning(
                     "[WHISPER] API hatası (deneme %d/%d): %s. %ds sonra tekrar...",
-                    attempt, WHISPER_RETRY_MAX, exc, wait,
+                    attempt,
+                    WHISPER_RETRY_MAX,
+                    exc,
+                    wait,
                 )
                 time.sleep(wait)
             else:
-                logger.error(
-                    "[WHISPER] Tüm %d deneme başarısız: %s", WHISPER_RETRY_MAX, exc
-                )
+                logger.error("[WHISPER] Tüm %d deneme başarısız: %s", WHISPER_RETRY_MAX, exc)
 
     raise last_exc  # type: ignore[misc]
 
@@ -109,11 +110,13 @@ def _parse_whisper_response(response: Any) -> list[dict[str, Any]]:
     # verbose_json → response.words listesi gelir
     if hasattr(response, "words") and response.words:
         for word_info in response.words:
-            word_timestamps.append({
-                "word":  word_info.word,
-                "start": float(word_info.start),
-                "end":   float(word_info.end),
-            })
+            word_timestamps.append(
+                {
+                    "word": word_info.word,
+                    "start": float(word_info.start),
+                    "end": float(word_info.end),
+                }
+            )
         return word_timestamps
 
     # Yedek: segments içindeki words listesi
@@ -121,10 +124,12 @@ def _parse_whisper_response(response: Any) -> list[dict[str, Any]]:
         for segment in response.segments:
             if hasattr(segment, "words"):
                 for word_info in segment.words:
-                    word_timestamps.append({
-                        "word":  word_info.get("word", ""),
-                        "start": float(word_info.get("start", 0.0)),
-                        "end":   float(word_info.get("end", 0.0)),
-                    })
+                    word_timestamps.append(
+                        {
+                            "word": word_info.get("word", ""),
+                            "start": float(word_info.get("start", 0.0)),
+                            "end": float(word_info.get("end", 0.0)),
+                        }
+                    )
 
     return word_timestamps

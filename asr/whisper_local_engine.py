@@ -121,7 +121,8 @@ def transcribe_with_timestamps(
     if duration_sec > WHISPER_CHUNK_THRESHOLD_SEC:
         logger.info(
             "[WHISPER LOCAL] Uzun dosya (%.1fs > %ds); parçalı işleme başlatılıyor.",
-            duration_sec, WHISPER_CHUNK_THRESHOLD_SEC,
+            duration_sec,
+            WHISPER_CHUNK_THRESHOLD_SEC,
         )
         word_timestamps = _transcribe_chunked(model, audio_array, sample_rate, language)
     else:
@@ -134,9 +135,7 @@ def transcribe_with_timestamps(
         result = model.transcribe(audio_file_path, **transcribe_kwargs)
         word_timestamps = _parse_local_whisper_result(result)
 
-    logger.info(
-        "[WHISPER LOCAL] %d kelime transkribe edildi.", len(word_timestamps)
-    )
+    logger.info("[WHISPER LOCAL] %d kelime transkribe edildi.", len(word_timestamps))
     return word_timestamps
 
 
@@ -147,9 +146,9 @@ def _transcribe_chunked(
     language: str | None,
 ) -> list[dict[str, Any]]:
     """Uzun sesi örtüşen parçalara bölerek transkribe eder."""
-    chunk_samples   = int(WHISPER_CHUNK_DURATION_SEC * sample_rate)
-    overlap_samples = int(WHISPER_CHUNK_OVERLAP_SEC  * sample_rate)
-    stride          = chunk_samples - overlap_samples
+    chunk_samples = int(WHISPER_CHUNK_DURATION_SEC * sample_rate)
+    overlap_samples = int(WHISPER_CHUNK_OVERLAP_SEC * sample_rate)
+    stride = chunk_samples - overlap_samples
 
     all_words: list[dict[str, Any]] = []
     offset = 0
@@ -168,11 +167,13 @@ def _transcribe_chunked(
             for word_info in segment.get("words", []):
                 clean_word = word_info.get("word", "").strip()
                 if clean_word:
-                    all_words.append({
-                        "word":  clean_word,
-                        "start": float(word_info.get("start", 0.0)) + chunk_start_sec,
-                        "end":   float(word_info.get("end",   0.0)) + chunk_start_sec,
-                    })
+                    all_words.append(
+                        {
+                            "word": clean_word,
+                            "start": float(word_info.get("start", 0.0)) + chunk_start_sec,
+                            "end": float(word_info.get("end", 0.0)) + chunk_start_sec,
+                        }
+                    )
 
         offset += stride
 
@@ -205,10 +206,12 @@ def _parse_local_whisper_result(result: dict[str, Any]) -> list[dict[str, Any]]:
             # Whisper bazen kelimenin başına boşluk ekler; temizle
             clean_word = word_info.get("word", "").strip()
             if clean_word:
-                word_timestamps.append({
-                    "word":  clean_word,
-                    "start": float(word_info.get("start", 0.0)),
-                    "end":   float(word_info.get("end",   0.0)),
-                })
+                word_timestamps.append(
+                    {
+                        "word": clean_word,
+                        "start": float(word_info.get("start", 0.0)),
+                        "end": float(word_info.get("end", 0.0)),
+                    }
+                )
 
     return word_timestamps

@@ -46,7 +46,7 @@ def build_anchor_map(
     if n == 0 or m == 0:
         return []
 
-    vosk_texts    = [w["word"].lower().strip() for w in vosk_words]
+    vosk_texts = [w["word"].lower().strip() for w in vosk_words]
     whisper_texts = [w["word"].lower().strip() for w in whisper_words]
 
     # DP tablosu: dp[i][j] = vosk_texts[:i] ve whisper_texts[:j] LCS uzunluğu
@@ -63,10 +63,12 @@ def build_anchor_map(
     i, j = n, m
     while i > 0 and j > 0:
         if vosk_texts[i - 1] == whisper_texts[j - 1]:
-            anchors.append((
-                vosk_words[i - 1]["start"],
-                whisper_words[j - 1]["start"],
-            ))
+            anchors.append(
+                (
+                    vosk_words[i - 1]["start"],
+                    whisper_words[j - 1]["start"],
+                )
+            )
             i -= 1
             j -= 1
         elif dp[i - 1][j] >= dp[i][j - 1]:
@@ -78,7 +80,9 @@ def build_anchor_map(
 
     logger.debug(
         "[HİZALAMA] %d Vosk kelimesi, %d Whisper kelimesi → %d anchor bulundu (DP-LCS).",
-        n, m, len(anchors),
+        n,
+        m,
+        len(anchors),
     )
     return anchors
 
@@ -110,7 +114,7 @@ def map_vosk_time_to_whisper(
         return max(0.0, vosk_time)
 
     before = [(v, w) for v, w in anchors if v <= vosk_time]
-    after  = [(v, w) for v, w in anchors if v >  vosk_time]
+    after = [(v, w) for v, w in anchors if v > vosk_time]
 
     if before and after:
         # ─── Doğrusal interpolasyon ───────────────────────────────
@@ -158,14 +162,16 @@ def align_phonetic_detections(
 
     for detection in phonetic_detections:
         aligned_start = map_vosk_time_to_whisper(detection["start"], anchors)
-        aligned_end   = map_vosk_time_to_whisper(detection["end"],   anchors)
+        aligned_end = map_vosk_time_to_whisper(detection["end"], anchors)
 
-        aligned.append({
-            **detection,
-            "start":              aligned_start,
-            "end":                aligned_end,
-            "vosk_start_original": detection["start"],  # Hata ayıklama için koru
-            "vosk_end_original":   detection["end"],
-        })
+        aligned.append(
+            {
+                **detection,
+                "start": aligned_start,
+                "end": aligned_end,
+                "vosk_start_original": detection["start"],  # Hata ayıklama için koru
+                "vosk_end_original": detection["end"],
+            }
+        )
 
     return aligned

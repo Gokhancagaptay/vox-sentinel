@@ -102,8 +102,10 @@ class TestPhoneticOnlyDetection:
             patch("core.pipeline.apply_censor_beeps", return_value="output.wav"),
         ):
             result = run_censorship_pipeline(
-                "input.wav", "output.wav",
-                use_whisper=False, use_phonetic=True,
+                "input.wav",
+                "output.wav",
+                use_whisper=False,
+                use_phonetic=True,
             )
         assert len(result.phonetic_detections) >= 1
 
@@ -115,8 +117,10 @@ class TestPhoneticOnlyDetection:
             patch("core.pipeline.apply_censor_beeps", return_value="output.wav"),
         ):
             result = run_censorship_pipeline(
-                "input.wav", "output.wav",
-                use_whisper=False, use_phonetic=True,
+                "input.wav",
+                "output.wav",
+                use_whisper=False,
+                use_phonetic=True,
             )
         matched = {d["matched_banned"] for d in result.phonetic_detections}
         assert "aptal" in matched
@@ -129,8 +133,10 @@ class TestPhoneticOnlyDetection:
             patch("core.pipeline.apply_censor_beeps", return_value="output.wav"),
         ):
             result = run_censorship_pipeline(
-                "input.wav", "output.wav",
-                use_whisper=False, use_phonetic=True,
+                "input.wav",
+                "output.wav",
+                use_whisper=False,
+                use_phonetic=True,
             )
         assert result.censored is True
 

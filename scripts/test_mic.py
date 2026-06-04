@@ -1,4 +1,5 @@
 """PyAudio ile giriş cihazlarını listeler."""
+
 import _bootstrap_path  # noqa: F401
 import pyaudio
 

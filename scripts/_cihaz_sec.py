@@ -5,6 +5,7 @@ Mikrofon cihazlarını listeler, kullanıcının seçtiği cihazla kayıt testi 
 Çalıştırma (proje kökünden):
     python scripts/_cihaz_sec.py
 """
+
 import io
 import sys
 
@@ -128,7 +129,11 @@ if calisan_cihazlar:
     print(f"\n  ONERI: index={en_iyi[0]}, rate={en_iyi[1]}")
     print(f"  '{en_iyi[2]}'")
 
-    cevap = input("\n  Bu cihazı köke mic_device_config.py olarak kaydetmek ister misiniz? (e/h): ").strip().lower()
+    cevap = (
+        input("\n  Bu cihazı köke mic_device_config.py olarak kaydetmek ister misiniz? (e/h): ")
+        .strip()
+        .lower()
+    )
     if cevap == "e":
         ayar_dosyasi = ROOT / "mic_device_config.py"
         with open(ayar_dosyasi, "w", encoding="utf-8") as f:

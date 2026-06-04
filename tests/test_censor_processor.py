@@ -3,6 +3,7 @@ Testler: audio/censor_processor.py
 - _merge_overlapping(): çakışma, bitişik, ayrı segmentler, minimum süre
 - apply_censor_beeps(): gerçek WAV dosyasıyla tam döngü (FFmpeg gerekli)
 """
+
 import os
 import tempfile
 from pathlib import Path
@@ -12,16 +13,22 @@ import pytest
 from audio.censor_processor import _merge_overlapping, apply_censor_beeps
 
 REPO_ROOT = Path(__file__).parent.parent
-TEST_WAV   = REPO_ROOT / "test_sesi.wav"
+TEST_WAV = REPO_ROOT / "test_sesi.wav"
 AUDIO_DURATION_MS = 30_000  # 30s üst sınır (test dosyası ~11s)
 
 
 def _seg(start_ms, end_ms, word="test"):
-    return {"start_ms": start_ms, "end_ms": end_ms, "word": word,
-            "matched_banned": "aptal", "source": "whisper"}
+    return {
+        "start_ms": start_ms,
+        "end_ms": end_ms,
+        "word": word,
+        "matched_banned": "aptal",
+        "source": "whisper",
+    }
 
 
 # ── _merge_overlapping ────────────────────────────────────────────────────────
+
 
 class TestMergeOverlapping:
 
@@ -67,6 +74,7 @@ class TestMergeOverlapping:
 
 # ── apply_censor_beeps ────────────────────────────────────────────────────────
 
+
 @pytest.mark.skipif(not TEST_WAV.exists(), reason="test_sesi.wav bulunamadı")
 class TestApplyCensorBeeps:
 
@@ -89,6 +97,7 @@ class TestApplyCensorBeeps:
     def test_cikti_suresi_degismez(self):
         """Bip ekleme ses süresini değiştirmemeli."""
         from pydub import AudioSegment
+
         original = AudioSegment.from_file(str(TEST_WAV))
         segs = [_seg(2000, 3000), _seg(5000, 6000)]
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:

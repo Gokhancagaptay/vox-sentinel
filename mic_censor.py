@@ -38,15 +38,16 @@ from config.settings import (
 from decision.voting_engine import vote_and_merge
 
 # ── Sabitler ──────────────────────────────────────────────────────────────────
-VOSK_RATE      = 16000      # Vosk'un beklediği örnekleme hızı
-STREAM_SECONDS = 4          # Akış modunda her segment süresi
-SILENCE_RMS    = 0.0005     # float32 RMS eşiği (SUNUM_DEMO referansıyla ayarlandı)
-SILENCE_SECS   = 3.0        # Bu kadar sessizlik → kayıt durdurma
+VOSK_RATE = 16000  # Vosk'un beklediği örnekleme hızı
+STREAM_SECONDS = 4  # Akış modunda her segment süresi
+SILENCE_RMS = 0.0005  # float32 RMS eşiği (SUNUM_DEMO referansıyla ayarlandı)
+SILENCE_SECS = 3.0  # Bu kadar sessizlik → kayıt durdurma
 
 SetLogLevel(-1)
 
 
 # ── Mikrofon tespiti ve seçimi ────────────────────────────────────────────────
+
 
 def _mikrofon_sec() -> tuple[int, int, int]:
     """
@@ -54,11 +55,18 @@ def _mikrofon_sec() -> tuple[int, int, int]:
     Döndürür: (device_index, sample_rate, channels)
     """
     devices = sd.query_devices()
-    hoparlor_anahtar = ("hoparlör", "speaker", "kulaklık", "headphone",
-                        "output", "stereo mix", "karışım")
+    hoparlor_anahtar = (
+        "hoparlör",
+        "speaker",
+        "kulaklık",
+        "headphone",
+        "output",
+        "stereo mix",
+        "karışım",
+    )
 
     print("\n  Calisabilir mikrofonlar aranıyor...")
-    calisan: list[tuple[int, str, int, int]] = []   # (dev_id, ad, sr, ch)
+    calisan: list[tuple[int, str, int, int]] = []  # (dev_id, ad, sr, ch)
 
     for dev_id, info in enumerate(devices):
         if info["max_input_channels"] == 0:
@@ -72,8 +80,14 @@ def _mikrofon_sec() -> tuple[int, int, int]:
         ch = min(info["max_input_channels"], 2)
 
         try:
-            test = sd.rec(int(0.3 * sr), samplerate=sr, channels=ch,
-                          device=dev_id, dtype="float32", blocking=True)
+            test = sd.rec(
+                int(0.3 * sr),
+                samplerate=sr,
+                channels=ch,
+                device=dev_id,
+                dtype="float32",
+                blocking=True,
+            )
             vol = float(np.abs(test).mean())
             if vol > 1e10 or np.isnan(vol) or np.isinf(vol):
                 continue
@@ -117,6 +131,7 @@ def _mikrofon_sec() -> tuple[int, int, int]:
 
 # ── Ses dönüşümü: float32 native → int16 16kHz (Vosk için) ──────────────────
 
+
 def _donustur_vosk_wav(float32_array: np.ndarray, native_sr: int, path: str) -> None:
     """
     sounddevice'dan gelen float32 veriyi Vosk'un beklediği
@@ -142,6 +157,7 @@ def _donustur_vosk_wav(float32_array: np.ndarray, native_sr: int, path: str) -> 
 
 # ── Oynatma ───────────────────────────────────────────────────────────────────
 
+
 def _ses_cal(dosya: str) -> None:
     with contextlib.suppress(FileNotFoundError, subprocess.CalledProcessError):
         subprocess.run(
@@ -153,6 +169,7 @@ def _ses_cal(dosya: str) -> None:
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAM MOD — Kaydet → Tam Pipeline → Çal
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def tam_mod():
     from core.pipeline import run_censorship_pipeline
@@ -196,8 +213,14 @@ def tam_mod():
 
     print("  (Mikrofon seviyesi gercek zamanli gosteriliyor — konusmaya baslayin)\n")
 
-    with sd.InputStream(samplerate=native_sr, channels=ch, dtype="float32",
-                        device=dev_id, blocksize=1024, callback=ses_callback):
+    with sd.InputStream(
+        samplerate=native_sr,
+        channels=ch,
+        dtype="float32",
+        device=dev_id,
+        blocksize=1024,
+        callback=ses_callback,
+    ):
         while kayit_aktif.is_set():
             try:
                 blok = blok_kuyrugu.get(timeout=0.5)
@@ -213,10 +236,10 @@ def tam_mod():
                 sessizlik_sn = 0.0
 
             # Her durumda anlık seviyeyi göster
-            elapsed  = time.time() - baslangic
-            bar_len  = min(int(seviye * 1000), 30)
-            durum    = "SESSIZ" if seviye < SILENCE_RMS else "SES   "
-            cubuk    = "#" * bar_len + "-" * (30 - bar_len)
+            elapsed = time.time() - baslangic
+            bar_len = min(int(seviye * 1000), 30)
+            durum = "SESSIZ" if seviye < SILENCE_RMS else "SES   "
+            cubuk = "#" * bar_len + "-" * (30 - bar_len)
             kalan_ss = max(0.0, SILENCE_SECS - sessizlik_sn)
             sys.stdout.write(
                 f"\r  [{durum}] {elapsed:.1f}s  |{cubuk}|  rms={seviye:.5f}"
@@ -229,7 +252,9 @@ def tam_mod():
                 break
 
             if time.time() - baslangic >= MAX_RECORDING_DURATION_SEC:
-                print(f"\n  [MAX SURE] {MAX_RECORDING_DURATION_SEC}s limitine ulasildi. Kayit durdu.")
+                print(
+                    f"\n  [MAX SURE] {MAX_RECORDING_DURATION_SEC}s limitine ulasildi. Kayit durdu."
+                )
                 break
 
     if not kareler:
@@ -273,7 +298,7 @@ def tam_mod():
         def _sansur_mu(start_s: float, end_s: float) -> str | None:
             """Kelime zaman aralığı bir sansür segmentiyle örtüşüyor mu?"""
             start_ms = int(start_s * 1000)
-            end_ms   = int(end_s   * 1000)
+            end_ms = int(end_s * 1000)
             for seg in sonuc.final_censor_segments:
                 if start_ms < seg["end_ms"] and end_ms > seg["start_ms"]:
                     return seg.get("matched_banned", "?")
@@ -304,17 +329,21 @@ def tam_mod():
         if sonuc.phonetic_detections:
             print(f"\n  Fonetik eslesme ({len(sonuc.phonetic_detections)} adet):")
             for d in sonuc.phonetic_detections:
-                print(f"    '{d['word']}' ~ '{d.get('matched_banned','?')}'"
-                      f"  (skor={d.get('score',0):.2f})")
+                print(
+                    f"    '{d['word']}' ~ '{d.get('matched_banned','?')}'"
+                    f"  (skor={d.get('score',0):.2f})"
+                )
 
         # Final özet
         print("\n" + "=" * 58)
         if sonuc.final_censor_segments:
             print(f"  SONUC: {len(sonuc.final_censor_segments)} kelime biplendi\n")
             for seg in sonuc.final_censor_segments:
-                print(f"    [{seg['source']:>22}]  '{seg.get('word','?')}'"
-                      f" -> '{seg.get('matched_banned','?')}'"
-                      f"  ({seg['start_ms']}ms - {seg['end_ms']}ms)")
+                print(
+                    f"    [{seg['source']:>22}]  '{seg.get('word','?')}'"
+                    f" -> '{seg.get('matched_banned','?')}'"
+                    f"  ({seg['start_ms']}ms - {seg['end_ms']}ms)"
+                )
             print(f"\n  Sansurlu dosya: {cikti}")
             print("\n  Oynatiliyor...\n")
             _ses_cal(cikti)
@@ -338,6 +367,7 @@ def tam_mod():
 # ═══════════════════════════════════════════════════════════════════════════════
 # AKIŞ MODU — Anlık chunk (Vosk + Fonetik, ~2s gecikme)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def akis_modu():
     print("\n" + "=" * 58)
@@ -369,8 +399,14 @@ def akis_modu():
 
     print("  [AKIS] Dinleniyor...\n")
     try:
-        with sd.InputStream(samplerate=native_sr, channels=ch, dtype="float32",
-                            blocksize=1024, device=dev_id, callback=ses_callback):
+        with sd.InputStream(
+            samplerate=native_sr,
+            channels=ch,
+            dtype="float32",
+            blocksize=1024,
+            device=dev_id,
+            callback=ses_callback,
+        ):
             while True:
                 blok = ses_kuyruğu.get()
                 biriken.append(blok)
@@ -418,10 +454,15 @@ def _islem_chunk(kareler: list[np.ndarray], idx: int, model, native_sr: int) -> 
         for w in kelimeler:
             for banned in YASAKLI_KELIMELER:
                 if banned.lower() in w["word"].lower():
-                    vosk_direkt.append({
-                        "word": w["word"], "start": w["start"], "end": w["end"],
-                        "matched_banned": banned, "source": "vosk-direct"
-                    })
+                    vosk_direkt.append(
+                        {
+                            "word": w["word"],
+                            "start": w["start"],
+                            "end": w["end"],
+                            "matched_banned": banned,
+                            "source": "vosk-direct",
+                        }
+                    )
                     break
 
         segmentler = vote_and_merge(vosk_direkt, fonetik)
@@ -451,8 +492,9 @@ def _islem_chunk(kareler: list[np.ndarray], idx: int, model, native_sr: int) -> 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="VoxSentinel — Mikrofon Sansur Araci")
-    parser.add_argument("--stream", action="store_true",
-                        help="Akis modu: ~2s gecikme (Vosk+Fonetik)")
+    parser.add_argument(
+        "--stream", action="store_true", help="Akis modu: ~2s gecikme (Vosk+Fonetik)"
+    )
     args = parser.parse_args()
 
     if args.stream:

@@ -18,16 +18,16 @@ VOSK_SAMPLE_RATE = 16000
 VOSK_CHUNK_SIZE = 4000  # Her turda okunacak frame sayısı
 
 # Vosk'un gerektirdiği WAV formatı (converter.py tarafından kullanılır)
-VOSK_REQUIRED_CHANNELS    = 1                  # Mono
-VOSK_REQUIRED_SAMPLE_RATE = VOSK_SAMPLE_RATE   # 16 kHz
-VOSK_REQUIRED_SAMPLE_WIDTH = 2                 # 16-bit (2 byte)
+VOSK_REQUIRED_CHANNELS = 1  # Mono
+VOSK_REQUIRED_SAMPLE_RATE = VOSK_SAMPLE_RATE  # 16 kHz
+VOSK_REQUIRED_SAMPLE_WIDTH = 2  # 16-bit (2 byte)
 
 # ─── Whisper API Ayarları ─────────────────────────────────────────
 WHISPER_MODEL = "whisper-1"
-WHISPER_LANGUAGE = "tr"          # Türkçe zorla; None yapılırsa otomatik algılar
+WHISPER_LANGUAGE = "tr"  # Türkçe zorla; None yapılırsa otomatik algılar
 WHISPER_RESPONSE_FORMAT = "verbose_json"
-WHISPER_API_TIMEOUT = 60         # API çağrısı için zaman aşımı (saniye)
-WHISPER_RETRY_MAX = 3            # Geçici API hatasında maksimum yeniden deneme
+WHISPER_API_TIMEOUT = 60  # API çağrısı için zaman aşımı (saniye)
+WHISPER_RETRY_MAX = 3  # Geçici API hatasında maksimum yeniden deneme
 
 # ─── Yerel Whisper Ayarları ───────────────────────────────────────
 # Model boyutu / hız / doğruluk dengesi (CPU için önerilen: "base" veya "small")
@@ -66,8 +66,8 @@ PHONETIC_LENGTH_DIFF_MAX = 3
 PHONETIC_CACHE_MAXSIZE = 4096
 
 # ─── Bip Sesi Ayarları ───────────────────────────────────────────
-BEEP_FREQUENCY_HZ = 1000   # Klasik TV sansür bip frekansı
-BEEP_GAIN_DB = -5           # Bip sesinin şiddet ayarı (dB)
+BEEP_FREQUENCY_HZ = 1000  # Klasik TV sansür bip frekansı
+BEEP_GAIN_DB = -5  # Bip sesinin şiddet ayarı (dB)
 
 # Sansür kesiminin kelimeden önce/sonra ne kadar uzayacağı (ms)
 # Telaffuz başlangıç/bitiş kaymalarını telafi eder
@@ -85,9 +85,9 @@ BIGRAM_MAX_GAP_SEC = 0.30
 
 # ─── Uzun Ses Bölümleme (Chunking) ───────────────────────────────
 # Yerel Whisper modelinde uzun dosyalar için otomatik parçalı işleme
-WHISPER_CHUNK_THRESHOLD_SEC = 60   # Bu süreyi aşan dosyalar parçalanır
-WHISPER_CHUNK_DURATION_SEC  = 30   # Her parçanın süresi (saniye)
-WHISPER_CHUNK_OVERLAP_SEC   = 5    # Parça başı/sonu örtüşme (kelime kırılmasını önler)
+WHISPER_CHUNK_THRESHOLD_SEC = 60  # Bu süreyi aşan dosyalar parçalanır
+WHISPER_CHUNK_DURATION_SEC = 30  # Her parçanın süresi (saniye)
+WHISPER_CHUNK_OVERLAP_SEC = 5  # Parça başı/sonu örtüşme (kelime kırılmasını önler)
 
 # ─── Mikrofon / Kayıt Ayarları ───────────────────────────────────
 # tam_mod() kayıt güvenlik limiti; bu süreyi aşan kayıt otomatik durdurulur

@@ -1,4 +1,5 @@
 """Çalışan mikrofon cihazını tespit eder (WMME + WASAPI dener)."""
+
 import io
 import sys
 

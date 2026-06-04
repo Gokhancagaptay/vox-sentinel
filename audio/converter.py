@@ -50,15 +50,18 @@ def needs_conversion(audio_file_path: str) -> bool:
 
     # WAV ise kanal ve örnekleme hızını kontrol et
     import wave
+
     try:
         with wave.open(audio_file_path, "rb") as wf:
             return (
-                wf.getnchannels()    != VOSK_REQUIRED_CHANNELS or
-                wf.getframerate()    != VOSK_REQUIRED_SAMPLE_RATE or
-                wf.getsampwidth()    != VOSK_REQUIRED_SAMPLE_WIDTH
+                wf.getnchannels() != VOSK_REQUIRED_CHANNELS
+                or wf.getframerate() != VOSK_REQUIRED_SAMPLE_RATE
+                or wf.getsampwidth() != VOSK_REQUIRED_SAMPLE_WIDTH
             )
     except (wave.Error, EOFError, OSError):
-        logger.debug("[DÖNÜŞTÜRÜCÜ] WAV başlık okunamadı, dönüştürme yapılacak: '%s'", audio_file_path)
+        logger.debug(
+            "[DÖNÜŞTÜRÜCÜ] WAV başlık okunamadı, dönüştürme yapılacak: '%s'", audio_file_path
+        )
         return True
 
 
@@ -97,10 +100,7 @@ def to_vosk_wav(audio_file_path: str) -> tuple[str, bool]:
     try:
         audio = AudioSegment.from_file(audio_file_path)
     except Exception as exc:
-        raise RuntimeError(
-            f"Ses dosyası okunamadı: '{audio_file_path}'\n"
-            f"Hata: {exc}"
-        ) from exc
+        raise RuntimeError(f"Ses dosyası okunamadı: '{audio_file_path}'\n" f"Hata: {exc}") from exc
 
     # Mono'ya çevir
     if audio.channels != VOSK_REQUIRED_CHANNELS:
@@ -115,7 +115,9 @@ def to_vosk_wav(audio_file_path: str) -> tuple[str, bool]:
         audio = audio.set_sample_width(VOSK_REQUIRED_SAMPLE_WIDTH)
 
     # Geçici WAV dosyasına yaz (pipeline bitince silinir)
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False, prefix="voxsentinel_") as tmp_file:
+    with tempfile.NamedTemporaryFile(
+        suffix=".wav", delete=False, prefix="voxsentinel_"
+    ) as tmp_file:
         tmp_path = tmp_file.name
 
     audio.export(tmp_path, format="wav")

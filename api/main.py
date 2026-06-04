@@ -42,6 +42,7 @@ _jobs: dict[str, dict[str, Any]] = {}
 
 # ─── Modeller ────────────────────────────────────────────────────
 
+
 class JobStatus(BaseModel):
     job_id: str
     status: str  # "pending" | "processing" | "done" | "error"
@@ -60,6 +61,7 @@ class HealthResponse(BaseModel):
 
 # ─── Endpoint'ler ─────────────────────────────────────────────────
 
+
 @app.get("/", include_in_schema=False)
 async def ui(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -68,6 +70,7 @@ async def ui(request: Request):
 @app.get("/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
     import shutil
+
     return HealthResponse(
         status="ok",
         ffmpeg=shutil.which("ffmpeg") is not None,
@@ -148,14 +151,17 @@ async def download_job(job_id: str) -> FileResponse:
 
 # ─── Yardımcılar ──────────────────────────────────────────────────
 
+
 async def _process_job(job_id: str, input_path: str, output_path: str) -> None:
     _jobs[job_id]["status"] = "processing"
     try:
         result = await run_censorship_pipeline_async(input_path, output_path)
-        _jobs[job_id].update({
-            "status": "done",
-            "segments_censored": len(result.final_censor_segments),
-        })
+        _jobs[job_id].update(
+            {
+                "status": "done",
+                "segments_censored": len(result.final_censor_segments),
+            }
+        )
     except Exception as exc:
         _jobs[job_id].update({"status": "error", "error": str(exc)})
     finally:

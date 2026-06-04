@@ -1,4 +1,5 @@
 """Windows mikrofon erişim engelinin nedenini tespit eder."""
+
 import io
 import sys
 
@@ -8,7 +9,9 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 
 import winreg
 
-PRIVACY_KEY = r"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone"
+PRIVACY_KEY = (
+    r"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone"
+)
 
 
 def reg_oku(hive, key_yolu, deger_adi="Value"):
@@ -37,7 +40,9 @@ python_yolu = sys.executable
 print(f"[3] Python yürütülebilir         : {python_yolu}")
 
 is_store = "WindowsApps" in python_yolu or "PythonSoftwareFoundation" in python_yolu
-print(f"[4] Microsoft Store Python?      : {'EVET ← bu sorun olabilir!' if is_store else 'Hayır'}\n")
+print(
+    f"[4] Microsoft Store Python?      : {'EVET ← bu sorun olabilir!' if is_store else 'Hayır'}\n"
+)
 
 if is_store:
     store_key = PRIVACY_KEY + r"\NonPackaged"

@@ -29,9 +29,9 @@ logger = logging.getLogger(__name__)
 # Kısa kelimelerde Jaro-Winkler çok geniş eşleşme yapar:
 #   jaro_winkler("siz", "sik") = 0.82  → "siz" (Türkçe "siz/you") yanlış alarm!
 # Bu nedenle kelime uzunluğuna göre kademeli eşik uygulanır.
-WHISPER_FUZZY_THRESHOLD_SHORT  = 1.01  # 3 karakter veya altı → fuzzy KAPALI (sadece tam eşleşme)
+WHISPER_FUZZY_THRESHOLD_SHORT = 1.01  # 3 karakter veya altı → fuzzy KAPALI (sadece tam eşleşme)
 WHISPER_FUZZY_THRESHOLD_MEDIUM = 0.88  # 4-5 karakter          → yüksek eşik
-WHISPER_FUZZY_THRESHOLD_LONG   = 0.80  # 6+ karakter           → normal eşik
+WHISPER_FUZZY_THRESHOLD_LONG = 0.80  # 6+ karakter           → normal eşik
 
 # Bigram kontrolünde kullanılan eşik.
 # "buadamı" ↔ "budala" gibi yanlış bigramleri önlemek için
@@ -43,7 +43,7 @@ def _fuzzy_threshold_for(word: str) -> float:
     """Kelime uzunluğuna göre uygun Jaro-Winkler eşiğini döndürür."""
     length = len(word)
     if length <= 3:
-        return WHISPER_FUZZY_THRESHOLD_SHORT   # Etkin olarak kapalı
+        return WHISPER_FUZZY_THRESHOLD_SHORT  # Etkin olarak kapalı
     if length <= 5:
         return WHISPER_FUZZY_THRESHOLD_MEDIUM
     return WHISPER_FUZZY_THRESHOLD_LONG
@@ -84,16 +84,20 @@ def find_whisper_banned_words(whisper_words: list[dict[str, Any]]) -> list[dict[
         matched_banned, best_score = _match_single_word(word_normalized)
 
         if matched_banned:
-            detections.append({
-                "word":           word_info["word"],
-                "start":          word_info["start"],
-                "end":            word_info["end"],
-                "matched_banned": matched_banned,
-                "source":         "whisper",
-            })
+            detections.append(
+                {
+                    "word": word_info["word"],
+                    "start": word_info["start"],
+                    "end": word_info["end"],
+                    "matched_banned": matched_banned,
+                    "source": "whisper",
+                }
+            )
             logger.debug(
                 "[WHISPER TESPIT] '%s' → '%s' (skor: %.3f)",
-                word_info["word"], matched_banned, best_score,
+                word_info["word"],
+                matched_banned,
+                best_score,
             )
 
     # ── Aşama 3: Bigram kontrolü (ardışık iki kelimeyi birleştir) ─
@@ -196,16 +200,21 @@ def _check_bigrams(whisper_words: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 best_score = score
 
         if matched_banned:
-            bigram_detections.append({
-                "word":           f"{w1['word']} {w2['word']}",
-                "start":          w1["start"],
-                "end":            w2["end"],
-                "matched_banned": matched_banned,
-                "source":         "whisper-bigram",
-            })
+            bigram_detections.append(
+                {
+                    "word": f"{w1['word']} {w2['word']}",
+                    "start": w1["start"],
+                    "end": w2["end"],
+                    "matched_banned": matched_banned,
+                    "source": "whisper-bigram",
+                }
+            )
             logger.debug(
                 "[WHISPER BIGRAM] '%s %s' → '%s' (skor: %.3f)",
-                w1["word"], w2["word"], matched_banned, best_score,
+                w1["word"],
+                w2["word"],
+                matched_banned,
+                best_score,
             )
 
     return bigram_detections
@@ -245,22 +254,26 @@ def vote_and_merge(
 
     # Her iki kaynağı da saniyeden milisaniyeye çevirerek tek listeye ekle
     for detection in whisper_detections:
-        all_raw.append({
-            "start_ms":      int(detection["start"] * 1000),
-            "end_ms":        int(detection["end"]   * 1000),
-            "word":          detection.get("word", ""),
-            "matched_banned": detection.get("matched_banned", ""),
-            "source":        detection["source"],
-        })
+        all_raw.append(
+            {
+                "start_ms": int(detection["start"] * 1000),
+                "end_ms": int(detection["end"] * 1000),
+                "word": detection.get("word", ""),
+                "matched_banned": detection.get("matched_banned", ""),
+                "source": detection["source"],
+            }
+        )
 
     for detection in phonetic_detections:
-        all_raw.append({
-            "start_ms":      int(detection["start"] * 1000),
-            "end_ms":        int(detection["end"]   * 1000),
-            "word":          detection.get("word", ""),
-            "matched_banned": detection.get("matched_banned", ""),
-            "source":        detection["source"],
-        })
+        all_raw.append(
+            {
+                "start_ms": int(detection["start"] * 1000),
+                "end_ms": int(detection["end"] * 1000),
+                "word": detection.get("word", ""),
+                "matched_banned": detection.get("matched_banned", ""),
+                "source": detection["source"],
+            }
+        )
 
     if not all_raw:
         return []
@@ -285,6 +298,8 @@ def vote_and_merge(
 
     logger.info(
         "[OYLAMA] %d Whisper + %d fonetik tespit → %d final segment.",
-        len(whisper_detections), len(phonetic_detections), len(merged),
+        len(whisper_detections),
+        len(phonetic_detections),
+        len(merged),
     )
     return merged

@@ -49,8 +49,7 @@ def _get_model() -> Model:
             _vosk_model = Model(VOSK_MODEL_PATH)
         except Exception as exc:
             raise RuntimeError(
-                f"Vosk modeli yüklenemedi: {exc}\n"
-                "Model dizini bozuk veya eksik olabilir."
+                f"Vosk modeli yüklenemedi: {exc}\n" "Model dizini bozuk veya eksik olabilir."
             ) from exc
     return _vosk_model
 
@@ -125,9 +124,11 @@ def _extract_words(vosk_result: dict[str, Any], target_list: list[dict[str, Any]
     """
     if "result" in vosk_result:
         for word_info in vosk_result["result"]:
-            target_list.append({
-                "word":  word_info.get("word", ""),
-                "start": word_info.get("start", 0.0),
-                "end":   word_info.get("end", 0.0),
-                "conf":  word_info.get("conf", 1.0),
-            })
+            target_list.append(
+                {
+                    "word": word_info.get("word", ""),
+                    "start": word_info.get("start", 0.0),
+                    "end": word_info.get("end", 0.0),
+                    "conf": word_info.get("conf", 1.0),
+                }
+            )

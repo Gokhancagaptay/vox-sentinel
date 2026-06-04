@@ -31,9 +31,7 @@ from config.whitelist import beyaz_listede_mi
 logger = logging.getLogger(__name__)
 
 # Yasaklı kelimeler normalize edilerek önbelleklenir; her çağrıda tekrar hesaplanmaz.
-_BANNED_NORMALIZED: list[str] = [
-    unicodedata.normalize("NFC", w.lower()) for w in YASAKLI_KELIMELER
-]
+_BANNED_NORMALIZED: list[str] = [unicodedata.normalize("NFC", w.lower()) for w in YASAKLI_KELIMELER]
 
 
 @lru_cache(maxsize=PHONETIC_CACHE_MAXSIZE)
@@ -125,21 +123,23 @@ def scan_for_phonetic_matches(
     matches: list[dict] = []
 
     for word_info in vosk_words:
-        matched_banned, score = find_phonetic_match(
-            word_info["word"], banned_list, threshold
-        )
+        matched_banned, score = find_phonetic_match(word_info["word"], banned_list, threshold)
         if matched_banned:
-            matches.append({
-                "word":             word_info["word"],
-                "start":            word_info["start"],
-                "end":              word_info["end"],
-                "matched_banned":   matched_banned,
-                "similarity_score": score,
-                "source":           "phonetic",
-            })
+            matches.append(
+                {
+                    "word": word_info["word"],
+                    "start": word_info["start"],
+                    "end": word_info["end"],
+                    "matched_banned": matched_banned,
+                    "similarity_score": score,
+                    "source": "phonetic",
+                }
+            )
             logger.debug(
                 "[FONETİK] '%s' → '%s' (skor: %.3f)",
-                word_info["word"], matched_banned, score,
+                word_info["word"],
+                matched_banned,
+                score,
             )
 
     return matches

@@ -18,53 +18,50 @@ YASAKLI_AGIRLIKLI: {kelime: seviye} dict — raporlama ve öncelik için
 
 # Ağırlıklı sözlük: {kök_kelime: seviye}
 YASAKLI_AGIRLIKLI: dict[str, str] = {
-
     # ── Ağır cinsel/bedensel küfürler ─────────────────────────────
-    "piç":       "yuksek",   # piçoş, piçlik, piçler
-    "sik":       "yuksek",   # siki, sikiş, sikik, sikerim, sikeyim
-    "orospu":    "yuksek",   # orosbuçuk, orospular
-    "göt":       "yuksek",   # götlek, götveren, götlük
-    "amına":     "yuksek",   # amk, amcık kökleriyle ilgili
-    "amk":       "yuksek",
-    "amcık":     "yuksek",
-    "yarrak":    "yuksek",   # yarrağı, yarrağına
-    "dalyarak":  "yuksek",
-    "taşak":     "yuksek",   # taşağına
-    "oç":        "yuksek",
+    "piç": "yuksek",  # piçoş, piçlik, piçler
+    "sik": "yuksek",  # siki, sikiş, sikik, sikerim, sikeyim
+    "orospu": "yuksek",  # orosbuçuk, orospular
+    "göt": "yuksek",  # götlek, götveren, götlük
+    "amına": "yuksek",  # amk, amcık kökleriyle ilgili
+    "amk": "yuksek",
+    "amcık": "yuksek",
+    "yarrak": "yuksek",  # yarrağı, yarrağına
+    "dalyarak": "yuksek",
+    "taşak": "yuksek",  # taşağına
+    "oç": "yuksek",
     "orosbuçuk": "yuksek",
-
     # ── Hakaret / aşağılama ────────────────────────────────────────
     # NOT: "it" eklenmedi — 2 karakter, çok sık yanlış alarm verir
-    "kahpe":      "orta",    # kahpeler, kahpelik
-    "ibne":       "orta",    # ibneler, ibnelik
-    "bok":        "orta",    # boktan, boklu, bokluk
-    "şerefsiz":   "orta",
-    "namussuz":   "orta",
-    "alçak":      "orta",
-    "aşağılık":   "orta",
-    "rezil":      "orta",
-    "haysiyetsiz":"orta",
-    "şıllık":     "orta",    # argo hakaret
-    "pezevenk":   "orta",
-    "kereste":    "orta",    # argo hakaret
-    "sürtük":     "orta",
-    "dangalak":   "orta",
-
+    "kahpe": "orta",  # kahpeler, kahpelik
+    "ibne": "orta",  # ibneler, ibnelik
+    "bok": "orta",  # boktan, boklu, bokluk
+    "şerefsiz": "orta",
+    "namussuz": "orta",
+    "alçak": "orta",
+    "aşağılık": "orta",
+    "rezil": "orta",
+    "haysiyetsiz": "orta",
+    "şıllık": "orta",  # argo hakaret
+    "pezevenk": "orta",
+    "kereste": "orta",  # argo hakaret
+    "sürtük": "orta",
+    "dangalak": "orta",
     # ── Hafif hakaret / alay ───────────────────────────────────────
     # NOT: "mal" eklenmedi — malzeme, maliyet gibi kelimelerle çakışır
     # NOT: "deli" eklenmedi — delil, delik gibi masum kelimelerle çakışır
-    "aptal":      "dusuk",   # aptallık, aptallar
-    "salak":      "dusuk",   # salaklık
+    "aptal": "dusuk",  # aptallık, aptallar
+    "salak": "dusuk",  # salaklık
     "gerizekalı": "dusuk",
-    "ahmak":      "dusuk",
-    "budala":     "dusuk",
-    "serseri":    "dusuk",
-    "ezik":       "dusuk",   # ezikler, eziklik
-    "avanak":     "dusuk",
-    "manyak":     "dusuk",   # manyaklar, manyaklık
-    "saloz":      "dusuk",   # kaba argo
-    "hödük":      "dusuk",
-    "göbelek":    "dusuk",   # argo
+    "ahmak": "dusuk",
+    "budala": "dusuk",
+    "serseri": "dusuk",
+    "ezik": "dusuk",  # ezikler, eziklik
+    "avanak": "dusuk",
+    "manyak": "dusuk",  # manyaklar, manyaklık
+    "saloz": "dusuk",  # kaba argo
+    "hödük": "dusuk",
+    "göbelek": "dusuk",  # argo
 }
 
 # Geriye dönük uyumlu düz liste — mevcut pipeline bu listeyi kullanır

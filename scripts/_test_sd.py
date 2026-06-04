@@ -8,7 +8,9 @@ for dev_idx in [14, 15]:
     print(f"Device {dev_idx}: {name}  default_samplerate={default_rate}")
     for rate in [48000, 44100, 16000, default_rate]:
         try:
-            data = sd.rec(int(0.5 * rate), samplerate=rate, channels=1, dtype="int16", device=dev_idx)
+            data = sd.rec(
+                int(0.5 * rate), samplerate=rate, channels=1, dtype="int16", device=dev_idx
+            )
             sd.wait()
             print(f"  rate={rate} OK → {len(data)} samples kaydedildi")
             break

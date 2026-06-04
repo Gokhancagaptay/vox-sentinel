@@ -1,4 +1,5 @@
 """Vosk ile WAV dosyası üzerinde basit kelime taraması."""
+
 import json
 import sys
 import wave

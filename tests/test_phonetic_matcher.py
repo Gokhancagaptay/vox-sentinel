@@ -4,6 +4,7 @@ Testler: asr/phonetic_matcher.py
 - scan_for_phonetic_matches() toplu tarama
 - _BANNED_NORMALIZED önbelleki
 """
+
 import pytest
 
 from asr.phonetic_matcher import (
@@ -14,6 +15,7 @@ from asr.phonetic_matcher import (
 )
 
 # ── find_phonetic_match ──────────────────────────────────────────────────────
+
 
 class TestFindPhoneticMatch:
 
@@ -65,6 +67,7 @@ class TestFindPhoneticMatch:
 
 # ── scan_for_phonetic_matches ────────────────────────────────────────────────
 
+
 class TestScanForPhoneticMatches:
 
     def test_bos_liste(self):
@@ -96,12 +99,20 @@ class TestScanForPhoneticMatches:
         result = scan_for_phonetic_matches(words)
         assert len(result) == 1
         r = result[0]
-        assert set(r.keys()) >= {"word", "start", "end", "matched_banned", "similarity_score", "source"}
+        assert set(r.keys()) >= {
+            "word",
+            "start",
+            "end",
+            "matched_banned",
+            "similarity_score",
+            "source",
+        }
         assert r["source"] == "phonetic"
         assert 0.0 <= r["similarity_score"] <= 1.0
 
 
 # ── Önbellek ────────────────────────────────────────────────────────────────
+
 
 class TestBannedNormalizedCache:
 

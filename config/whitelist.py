@@ -8,6 +8,7 @@ Beyaz Liste — Yanlış Alarm Önleme
    Böylece fiil çekimlerini tek tek yazmak gerekmez.
    Örnek: "götür" öneki → götürürken, götürdüm, götürüyor hepsi korunur.
 """
+
 import unicodedata
 
 
@@ -18,19 +19,32 @@ def _n(t: str) -> str:
 # ─── Tam eşleşme beyaz listesi ────────────────────────────────────
 BEYAZ_LISTE: set[str] = {
     # Çok yaygın Türkçe kelimeler — kısa oldukları için fonetik yanlış alarm riski
-    "bu", "o", "biz", "siz", "ben", "sen",
-    "bir", "ile", "ama", "da", "de",
-
+    "bu",
+    "o",
+    "biz",
+    "siz",
+    "ben",
+    "sen",
+    "bir",
+    "ile",
+    "ama",
+    "da",
+    "de",
     # Test sonuçlarından türetilen yanlış alarm kelimeleri
-    "bak", "bakın", "bakıyorum", "bakıyor",   # bak ≈ bok (0.80)
-    "başka", "başkası", "başkasına",           # başka ≈ taşak (0.78)
-    "mantık", "mantıklı", "mantıksız",        # mantık ≈ manyak (0.84)
-
+    "bak",
+    "bakın",
+    "bakıyorum",
+    "bakıyor",  # bak ≈ bok (0.80)
+    "başka",
+    "başkası",
+    "başkasına",  # başka ≈ taşak (0.78)
+    "mantık",
+    "mantıklı",
+    "mantıksız",  # mantık ≈ manyak (0.84)
     # "sik" kökü — bilim/coğrafya terimleri
     "siklon",
     "siklotron",
     "siklus",
-
     # "sık" fonetik benzerlik riski
     "sıkıntı",
     "sıkıntısı",
