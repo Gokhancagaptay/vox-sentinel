@@ -1,14 +1,12 @@
 """Vosk kelime zamanları + pydub bip ile basit dosya sansürü (tek katmanlı örnek)."""
-import _bootstrap_path  # noqa: F401
-
-import wave
 import json
 import sys
-from pathlib import Path
+import wave
 
-from vosk import Model, KaldiRecognizer, SetLogLevel
+import _bootstrap_path  # noqa: F401
 from pydub import AudioSegment
 from pydub.generators import Sine
+from vosk import KaldiRecognizer, Model, SetLogLevel
 
 SetLogLevel(-1)
 
@@ -81,7 +79,7 @@ if sansurlenecek_zamanlar:
 
     sansurlenecek_zamanlar.sort(key=lambda x: x[0], reverse=True)
 
-    for start, end, kelime in sansurlenecek_zamanlar:
+    for start, end, _kelime in sansurlenecek_zamanlar:
         sure = end - start
         bip_sesi = Sine(1000).to_audio_segment(duration=sure).apply_gain(-5)
         orijinal_ses = orijinal_ses[:start] + bip_sesi + orijinal_ses[end:]

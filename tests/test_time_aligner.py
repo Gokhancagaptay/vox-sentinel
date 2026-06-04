@@ -5,10 +5,11 @@ Testler: decision/time_aligner.py
 - align_phonetic_detections() zaman güncelleme
 """
 import pytest
+
 from decision.time_aligner import (
+    align_phonetic_detections,
     build_anchor_map,
     map_vosk_time_to_whisper,
-    align_phonetic_detections,
 )
 
 

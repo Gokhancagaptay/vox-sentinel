@@ -1,5 +1,4 @@
 import _bootstrap_path  # noqa: F401
-
 import sounddevice as sd
 
 for dev_idx in [14, 15]:

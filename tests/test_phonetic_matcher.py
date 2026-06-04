@@ -5,13 +5,13 @@ Testler: asr/phonetic_matcher.py
 - _BANNED_NORMALIZED önbelleki
 """
 import pytest
+
 from asr.phonetic_matcher import (
-    find_phonetic_match,
-    scan_for_phonetic_matches,
     _BANNED_NORMALIZED,
     YASAKLI_KELIMELER,
+    find_phonetic_match,
+    scan_for_phonetic_matches,
 )
-
 
 # ── find_phonetic_match ──────────────────────────────────────────────────────
 

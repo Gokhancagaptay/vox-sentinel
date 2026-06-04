@@ -20,18 +20,19 @@ veri akışını düzenler.
 """
 
 import asyncio
-import os
 import logging
+import os
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
-from asr.vosk_engine      import get_word_timestamps
 from asr.phonetic_matcher import scan_for_phonetic_matches
-from decision.time_aligner  import build_anchor_map, align_phonetic_detections
-from decision.voting_engine import find_whisper_banned_words, vote_and_merge
+from asr.vosk_engine import get_word_timestamps
 from audio.censor_processor import apply_censor_beeps
-from audio.converter        import to_vosk_wav, cleanup_temp_wav
-from config.settings import WHISPER_MODE, WHISPER_LOCAL_BACKEND
+from audio.converter import cleanup_temp_wav, to_vosk_wav
+from config.settings import WHISPER_LOCAL_BACKEND, WHISPER_MODE
+from decision.time_aligner import align_phonetic_detections, build_anchor_map
+from decision.voting_engine import find_whisper_banned_words, vote_and_merge
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +201,7 @@ async def _run_pipeline_layers_async(
 
     layer1_results = await asyncio.gather(*tasks, return_exceptions=True)
 
-    for name, res in zip(task_names, layer1_results):
+    for name, res in zip(task_names, layer1_results, strict=False):
         if isinstance(res, Exception):
             logger.error("[%s] Hata: %s", name.upper(), res)
         elif name == "vosk":

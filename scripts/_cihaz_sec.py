@@ -5,17 +5,17 @@ Mikrofon cihazlarını listeler, kullanıcının seçtiği cihazla kayıt testi 
 Çalıştırma (proje kökünden):
     python scripts/_cihaz_sec.py
 """
-import _bootstrap_path  # noqa: F401
-from pathlib import Path
-
-import sys
 import io
+import sys
+
+import _bootstrap_path  # noqa: F401
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
-import pyaudio
-import wave
 import struct
+import wave
+
+import pyaudio
 
 ROOT = _bootstrap_path.PROJECT_ROOT
 

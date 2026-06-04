@@ -10,7 +10,7 @@ Endpoint'ler:
     GET  /jobs/{job_id}/download — Sansürlü dosyayı indir
 """
 
-import asyncio
+import contextlib
 import os
 import tempfile
 import uuid
@@ -19,7 +19,6 @@ from typing import Any
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
@@ -93,7 +92,7 @@ async def censor_sync(file: UploadFile = File(...)) -> FileResponse:
         result = await run_censorship_pipeline_async(input_path, output_path)
     except Exception as exc:
         _safe_unlink(input_path)
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(status_code=500, detail=str(exc)) from None
 
     _safe_unlink(input_path)
 
@@ -164,7 +163,5 @@ async def _process_job(job_id: str, input_path: str, output_path: str) -> None:
 
 
 def _safe_unlink(path: str) -> None:
-    try:
+    with contextlib.suppress(OSError):
         os.unlink(path)
-    except OSError:
-        pass

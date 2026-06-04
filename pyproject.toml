@@ -8,7 +8,15 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
-ignore = ["E501"]
+ignore = [
+    "E501",   # line too long — handled by black
+    "B008",   # FastAPI File(...) / BackgroundTasks() defaults are valid
+]
+
+[tool.ruff.lint.per-file-ignores]
+"main.py"       = ["E402"]          # sys.stdout redirect must precede imports
+"mic_censor.py" = ["E402"]          # same
+"scripts/*.py"  = ["E402", "SIM115"] # standalone scripts, not production code
 
 [tool.mypy]
 python_version = "3.10"

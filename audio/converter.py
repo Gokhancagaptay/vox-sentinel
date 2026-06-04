@@ -11,11 +11,12 @@ dönüştürme yalnızca Vosk için yapılır.
 Araç: pydub + FFmpeg (sistem genelinde kurulu olmalı)
 """
 
+import logging
 import os
 import shutil
 import tempfile
-import logging
 from pathlib import Path
+
 from pydub import AudioSegment
 
 from config.settings import (
@@ -114,11 +115,8 @@ def to_vosk_wav(audio_file_path: str) -> tuple[str, bool]:
         audio = audio.set_sample_width(VOSK_REQUIRED_SAMPLE_WIDTH)
 
     # Geçici WAV dosyasına yaz (pipeline bitince silinir)
-    tmp_file = tempfile.NamedTemporaryFile(
-        suffix=".wav", delete=False, prefix="voxsentinel_"
-    )
-    tmp_path = tmp_file.name
-    tmp_file.close()
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False, prefix="voxsentinel_") as tmp_file:
+        tmp_path = tmp_file.name
 
     audio.export(tmp_path, format="wav")
     logger.info("[DÖNÜŞTÜRÜCÜ] Geçici WAV oluşturuldu: '%s'", tmp_path)

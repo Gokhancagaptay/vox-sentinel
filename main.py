@@ -19,10 +19,10 @@ Mimari (3 Katman):
     Katman 3  FFmpeg/pydub bip ekleme
 """
 
-import sys
-import os
-import logging
 import io
+import logging
+import os
+import sys
 from pathlib import Path
 
 # Windows terminalinde UTF-8 çıktısı için stdout'u yeniden yapılandır
@@ -49,9 +49,10 @@ def _print_banner() -> None:
 
 def _print_startup_info(mode: str, whisper_source: str, model_size: str) -> None:
     """Başlangıçta kullanılan konfigürasyonu raporla."""
-    from config.settings import VOSK_MODEL_PATH, PHONETIC_SIMILARITY_THRESHOLD
-    from config.banned_words import YASAKLI_KELIMELER
     import shutil
+
+    from config.banned_words import YASAKLI_KELIMELER
+    from config.settings import PHONETIC_SIMILARITY_THRESHOLD, VOSK_MODEL_PATH
 
     ffmpeg_ok = shutil.which("ffmpeg") is not None
 
@@ -151,7 +152,7 @@ def main(argv: list[str] = sys.argv[1:]) -> int:
             output_file = str(out_path.with_suffix(f".{output_format}"))
 
     # ── Whisper kaynak belirleme (pipeline.py mantığını burada tekrar çalıştırmıyoruz) ──
-    from config.settings import WHISPER_MODE, WHISPER_LOCAL_MODEL_SIZE
+    from config.settings import WHISPER_LOCAL_MODEL_SIZE, WHISPER_MODE
     has_openai_key = bool(os.environ.get("OPENAI_API_KEY"))
     use_whisper = True
 

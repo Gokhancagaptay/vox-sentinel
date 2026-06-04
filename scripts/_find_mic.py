@@ -1,8 +1,8 @@
 """Çalışan mikrofon cihazını tespit eder (WMME + WASAPI dener)."""
-import _bootstrap_path  # noqa: F401
-
-import sys
 import io
+import sys
+
+import _bootstrap_path  # noqa: F401
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 import pyaudio

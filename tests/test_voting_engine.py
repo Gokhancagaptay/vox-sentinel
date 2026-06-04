@@ -4,12 +4,11 @@ Testler: decision/voting_engine.py
 - vote_and_merge(): birleştirme, çakışma, sıralama
 - _normalize(), _fuzzy_threshold_for()
 """
-import pytest
 from decision.voting_engine import (
+    _fuzzy_threshold_for,
+    _normalize,
     find_whisper_banned_words,
     vote_and_merge,
-    _normalize,
-    _fuzzy_threshold_for,
 )
 
 

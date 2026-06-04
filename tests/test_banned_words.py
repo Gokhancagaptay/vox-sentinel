@@ -5,9 +5,10 @@ Testler: config/banned_words.py
 - agirlik_sayaci() doğruluğu
 """
 import pytest
+
 from config.banned_words import (
-    YASAKLI_KELIMELER,
     YASAKLI_AGIRLIKLI,
+    YASAKLI_KELIMELER,
     agirlik_sayaci,
 )
 

@@ -21,12 +21,12 @@ import threading
 from typing import Any
 
 from config.settings import (
-    WHISPER_LOCAL_MODEL_SIZE,
-    WHISPER_LOCAL_MODEL_DIR,
-    WHISPER_LANGUAGE,
-    WHISPER_CHUNK_THRESHOLD_SEC,
     WHISPER_CHUNK_DURATION_SEC,
     WHISPER_CHUNK_OVERLAP_SEC,
+    WHISPER_CHUNK_THRESHOLD_SEC,
+    WHISPER_LANGUAGE,
+    WHISPER_LOCAL_MODEL_DIR,
+    WHISPER_LOCAL_MODEL_SIZE,
 )
 
 logger = logging.getLogger(__name__)
@@ -139,8 +139,10 @@ def _transcribe_chunked(
     language: str | None,
 ) -> list[dict[str, Any]]:
     """Uzun dosyaları örtüşen parçalarda transkribe eder."""
+    import os
+    import tempfile
+
     from pydub import AudioSegment
-    import tempfile, os
 
     audio = AudioSegment.from_file(audio_file_path)
     chunk_ms   = int(WHISPER_CHUNK_DURATION_SEC * 1000)

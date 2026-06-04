@@ -10,19 +10,18 @@ Bu modül iki kaynaktan gelen tespitleri birleştirir ve
 çakışan/yakın zaman aralıklarını tek bir sansür segmentinde mergeler.
 """
 
-import unicodedata
 import logging
+import unicodedata
 from typing import Any
 
-from config.settings import (
-    VOTE_MERGE_THRESHOLD_MS,
-    PHONETIC_SIMILARITY_THRESHOLD,
-    PHONETIC_LENGTH_DIFF_MAX,
-    BIGRAM_MAX_GAP_SEC,
-)
-from config.banned_words import YASAKLI_KELIMELER
-from config.whitelist import beyaz_listede_mi
 from asr.phonetic_matcher import _jaro_winkler_cached
+from config.banned_words import YASAKLI_KELIMELER
+from config.settings import (
+    BIGRAM_MAX_GAP_SEC,
+    PHONETIC_LENGTH_DIFF_MAX,
+    VOTE_MERGE_THRESHOLD_MS,
+)
+from config.whitelist import beyaz_listede_mi
 
 logger = logging.getLogger(__name__)
 

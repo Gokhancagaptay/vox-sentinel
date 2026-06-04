@@ -26,12 +26,12 @@ import numpy as np
 import whisper
 
 from config.settings import (
-    WHISPER_LOCAL_MODEL_SIZE,
-    WHISPER_LOCAL_MODEL_DIR,
-    WHISPER_LANGUAGE,
-    WHISPER_CHUNK_THRESHOLD_SEC,
     WHISPER_CHUNK_DURATION_SEC,
     WHISPER_CHUNK_OVERLAP_SEC,
+    WHISPER_CHUNK_THRESHOLD_SEC,
+    WHISPER_LANGUAGE,
+    WHISPER_LOCAL_MODEL_DIR,
+    WHISPER_LOCAL_MODEL_SIZE,
 )
 
 logger = logging.getLogger(__name__)

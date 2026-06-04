@@ -5,8 +5,9 @@ Testler: audio/censor_processor.py
 """
 import os
 import tempfile
-import pytest
 from pathlib import Path
+
+import pytest
 
 from audio.censor_processor import _merge_overlapping, apply_censor_beeps
 

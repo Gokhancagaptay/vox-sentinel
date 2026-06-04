@@ -1,6 +1,5 @@
 """Whisper API verbose_json kelime zamanları denemesi (OPENAI_API_KEY gerekir)."""
 import _bootstrap_path  # noqa: F401
-
 import openai
 
 ROOT = _bootstrap_path.PROJECT_ROOT

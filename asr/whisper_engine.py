@@ -9,18 +9,18 @@ word_timestamps=True ile kelime bazlı start/end süresi de döndürülür.
 (opsiyonel) oluşturulabilir; arayüz aynı kalır.
 """
 
+import logging
 import os
 import time
-import logging
 from typing import Any
 
 import openai
 
 from config.settings import (
-    WHISPER_MODEL,
-    WHISPER_LANGUAGE,
-    WHISPER_RESPONSE_FORMAT,
     WHISPER_API_TIMEOUT,
+    WHISPER_LANGUAGE,
+    WHISPER_MODEL,
+    WHISPER_RESPONSE_FORMAT,
     WHISPER_RETRY_MAX,
 )
 

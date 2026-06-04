@@ -12,12 +12,16 @@ Performans: Segmentler soldan sağa tek geçişte birleştirilerek O(n) ses inş
 
 import logging
 from typing import Any
+
 from pydub import AudioSegment
 from pydub.exceptions import CouldntDecodeError
 from pydub.generators import Sine
 
 from config.settings import (
-    BEEP_FREQUENCY_HZ, BEEP_GAIN_DB, CENSOR_PADDING_MS, MIN_SEGMENT_DURATION_MS
+    BEEP_FREQUENCY_HZ,
+    BEEP_GAIN_DB,
+    CENSOR_PADDING_MS,
+    MIN_SEGMENT_DURATION_MS,
 )
 
 logger = logging.getLogger(__name__)

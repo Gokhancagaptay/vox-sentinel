@@ -1,13 +1,13 @@
 """Mikrofon izni verildi mi? Kısa kayıt testi."""
-import _bootstrap_path  # noqa: F401
-
-import sys
 import io
+import sys
+
+import _bootstrap_path  # noqa: F401
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
-import sounddevice as sd
 import numpy as np
+import sounddevice as sd
 
 SURE = 2  # saniye
 

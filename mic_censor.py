@@ -7,36 +7,35 @@ Kullanım:
     python mic_censor.py --stream     → Akış modu (anlık, Vosk+Fonetik ~2s gecikme)
 """
 
-import sys
-import os
+import argparse
+import contextlib
 import io
-import time
-import wave
 import json
+import os
+import queue
+import subprocess
+import sys
 import tempfile
 import threading
-import argparse
-import subprocess
-import queue
+import time
+import wave
 from pathlib import Path
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
-import sounddevice as sd
 import numpy as np
 import scipy.signal
-from pydub import AudioSegment
-from vosk import Model, KaldiRecognizer, SetLogLevel
+import sounddevice as sd
+from vosk import KaldiRecognizer, Model, SetLogLevel
 
-from config.settings import (
-    VOSK_MODEL_PATH,
-    BEEP_FREQUENCY_HZ, BEEP_GAIN_DB, CENSOR_PADDING_MS,
-    MAX_RECORDING_DURATION_SEC,
-)
-from config.banned_words import YASAKLI_KELIMELER
 from asr.phonetic_matcher import scan_for_phonetic_matches
-from decision.voting_engine import vote_and_merge
 from audio.censor_processor import apply_censor_beeps
+from config.banned_words import YASAKLI_KELIMELER
+from config.settings import (
+    MAX_RECORDING_DURATION_SEC,
+    VOSK_MODEL_PATH,
+)
+from decision.voting_engine import vote_and_merge
 
 # ── Sabitler ──────────────────────────────────────────────────────────────────
 VOSK_RATE      = 16000      # Vosk'un beklediği örnekleme hızı
@@ -90,7 +89,7 @@ def _mikrofon_sec() -> tuple[int, int, int]:
 
     # ── Listeyi göster ──────────────────────────────────────────────
     print(f"\n  {len(calisan)} calisan mikrofon bulundu:\n")
-    for i, (dev_id, ad, sr, ch) in enumerate(calisan):
+    for i, (dev_id, ad, sr, _ch) in enumerate(calisan):
         isaretci = " <-- ilk secim" if i == 0 else ""
         print(f"    [{dev_id:2d}] {ad:<45} (sr={sr} Hz){isaretci}")
 
@@ -124,10 +123,7 @@ def _donustur_vosk_wav(float32_array: np.ndarray, native_sr: int, path: str) -> 
     mono 16kHz int16 WAV formatına dönüştürür.
     """
     # Stereo → mono
-    if float32_array.ndim > 1:
-        mono = float32_array.mean(axis=1)
-    else:
-        mono = float32_array.flatten()
+    mono = float32_array.mean(axis=1) if float32_array.ndim > 1 else float32_array.flatten()
 
     # Yeniden örnekleme (native → 16kHz)
     if native_sr != VOSK_RATE:
@@ -147,13 +143,11 @@ def _donustur_vosk_wav(float32_array: np.ndarray, native_sr: int, path: str) -> 
 # ── Oynatma ───────────────────────────────────────────────────────────────────
 
 def _ses_cal(dosya: str) -> None:
-    try:
+    with contextlib.suppress(FileNotFoundError, subprocess.CalledProcessError):
         subprocess.run(
             ["ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", dosya],
             check=True,
         )
-    except (FileNotFoundError, subprocess.CalledProcessError):
-        pass
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -251,9 +245,8 @@ def tam_mod():
         return
 
     # Vosk formatına dönüştür ve kaydet
-    tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False, prefix="vox_mic_")
-    tmp.close()
-    tmp_path = tmp.name
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False, prefix="vox_mic_") as tmp:
+        tmp_path = tmp.name
     cikti = Path(tmp_path).stem + "_sansurlu.wav"
 
     try:
@@ -297,10 +290,7 @@ def tam_mod():
             print("  " + "-" * 52)
             for w in sonuc.whisper_words:
                 eslesme = _sansur_mu(w["start"], w["end"])
-                if eslesme:
-                    durum = f"[S] -> '{eslesme}' biplenecek"
-                else:
-                    durum = "[T] temiz"
+                durum = f"[S] -> '{eslesme}' biplenecek" if eslesme else "[T] temiz"
                 print(f"  {w['word']:<20} {w['start']:>9.2f}s {w['end']:>9.2f}s  {durum}")
         else:
             print("\n  Whisper cikti uretmedi (cok kisa ses?).")
@@ -396,9 +386,8 @@ def _islem_chunk(kareler: list[np.ndarray], idx: int, model, native_sr: int) -> 
     """Bir segment'i Vosk + Fonetik ile işler, sansürlü halini çalar."""
     ses = np.concatenate(kareler, axis=0)
 
-    tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False, prefix=f"vox_chunk{idx}_")
-    tmp.close()
-    tmp_path = tmp.name
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False, prefix=f"vox_chunk{idx}_") as tmp:
+        tmp_path = tmp.name
     cikti = tmp_path.replace(".wav", "_sansur.wav")
 
     try:

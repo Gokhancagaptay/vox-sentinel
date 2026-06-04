@@ -17,10 +17,15 @@ import logging
 import unicodedata
 from functools import lru_cache
 from typing import Any
+
 import jellyfish
 
-from config.settings import PHONETIC_SIMILARITY_THRESHOLD, PHONETIC_LENGTH_DIFF_MAX, PHONETIC_CACHE_MAXSIZE
 from config.banned_words import YASAKLI_KELIMELER
+from config.settings import (
+    PHONETIC_CACHE_MAXSIZE,
+    PHONETIC_LENGTH_DIFF_MAX,
+    PHONETIC_SIMILARITY_THRESHOLD,
+)
 from config.whitelist import beyaz_listede_mi
 
 logger = logging.getLogger(__name__)
@@ -70,9 +75,9 @@ def find_phonetic_match(
 
     # Varsayılan listeyle çağrıldıysa önbelleklenmiş normalized versiyonu kullan.
     if banned_list is YASAKLI_KELIMELER:
-        banned_pairs = zip(YASAKLI_KELIMELER, _BANNED_NORMALIZED)
+        banned_pairs = zip(YASAKLI_KELIMELER, _BANNED_NORMALIZED, strict=False)
     else:
-        banned_pairs = zip(banned_list, (w.lower() for w in banned_list))
+        banned_pairs = zip(banned_list, (w.lower() for w in banned_list), strict=False)
 
     best_match: str | None = None
     best_score: float = 0.0

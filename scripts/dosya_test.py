@@ -1,11 +1,10 @@
 """Vosk ile WAV dosyası üzerinde basit kelime taraması."""
-import _bootstrap_path  # noqa: F401
-
-import wave
 import json
 import sys
+import wave
 
-from vosk import Model, KaldiRecognizer
+import _bootstrap_path  # noqa: F401
+from vosk import KaldiRecognizer, Model
 
 ROOT = _bootstrap_path.PROJECT_ROOT
 ses_dosyasi = ROOT / "test_sesi.wav"

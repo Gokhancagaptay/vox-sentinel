@@ -3,6 +3,7 @@ pytest konfigürasyonu — proje kökünü sys.path'e ekler.
 """
 import sys
 from pathlib import Path
+
 import pytest
 
 ROOT = Path(__file__).parent.parent

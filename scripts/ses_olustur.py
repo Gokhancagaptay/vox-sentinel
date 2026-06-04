@@ -1,6 +1,5 @@
 """Google TTS ile test MP3 üretir (gTTS; requirements-dev.txt)."""
 import _bootstrap_path  # noqa: F401
-
 from gtts import gTTS
 
 ROOT = _bootstrap_path.PROJECT_ROOT

@@ -14,10 +14,9 @@ Patch hedefleri: core.pipeline.* namespace'i
 """
 
 from contextlib import contextmanager
-from unittest.mock import patch, MagicMock
-import pytest
+from unittest.mock import MagicMock, patch
 
-from core.pipeline import run_censorship_pipeline, PipelineResult
+from core.pipeline import PipelineResult, run_censorship_pipeline
 
 
 @contextmanager

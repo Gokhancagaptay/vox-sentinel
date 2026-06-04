@@ -9,15 +9,16 @@ Elde edilen zaman bilgisi daha sonra time_aligner tarafından
 Whisper zaman eksenine hizalanır.
 """
 
-import os
-import wave
 import json
 import logging
+import os
 import threading
+import wave
 from typing import Any
-from vosk import Model, KaldiRecognizer, SetLogLevel
 
-from config.settings import VOSK_MODEL_PATH, VOSK_CHUNK_SIZE
+from vosk import KaldiRecognizer, Model, SetLogLevel
+
+from config.settings import VOSK_CHUNK_SIZE, VOSK_MODEL_PATH
 
 # Vosk'un C++ katmanından gelen gereksiz logları bastır
 SetLogLevel(-1)

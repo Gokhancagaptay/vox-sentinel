@@ -10,6 +10,7 @@ Beyaz Liste — Yanlış Alarm Önleme
 """
 import unicodedata
 
+
 def _n(t: str) -> str:
     return unicodedata.normalize("NFC", t.lower().strip())
 

@@ -4,9 +4,8 @@ Testler: config/settings.py
 - Değerler makul aralıkta
 - Env var override çalışıyor
 """
-import os
 import importlib
-import pytest
+import os
 
 
 def _reload_settings(env_override=None):
