@@ -17,6 +17,11 @@ VOSK_MODEL_PATH = str(BASE_DIR / "model")
 VOSK_SAMPLE_RATE = 16000
 VOSK_CHUNK_SIZE = 4000  # Her turda okunacak frame sayısı
 
+# Vosk'un gerektirdiği WAV formatı (converter.py tarafından kullanılır)
+VOSK_REQUIRED_CHANNELS    = 1                  # Mono
+VOSK_REQUIRED_SAMPLE_RATE = VOSK_SAMPLE_RATE   # 16 kHz
+VOSK_REQUIRED_SAMPLE_WIDTH = 2                 # 16-bit (2 byte)
+
 # ─── Whisper API Ayarları ─────────────────────────────────────────
 WHISPER_MODEL = "whisper-1"
 WHISPER_LANGUAGE = "tr"          # Türkçe zorla; None yapılırsa otomatik algılar
@@ -36,6 +41,12 @@ WHISPER_LOCAL_MODEL_SIZE = "small"
 # Yerel Whisper model dosyalarının indirileceği/okunacağı dizin
 WHISPER_LOCAL_MODEL_DIR = str(BASE_DIR / "whisper_models")
 
+# Yerel Whisper backend seçimi:
+#   "faster-whisper" → CTranslate2 tabanlı, 4× hızlı, az bellek (önerilen)
+#   "openai-whisper" → Orijinal PyTorch tabanlı
+# faster-whisper kurulu değilse otomatik olarak openai-whisper'a düşer.
+WHISPER_LOCAL_BACKEND = "faster-whisper"
+
 # Çalışma modu — ortam değişkeni ile override edilebilir:
 # "api"   → OpenAI Whisper API (OPENAI_API_KEY gerekli, ücretli)
 # "local" → Yerel model (ücretsiz, çevrimdışı)
@@ -51,6 +62,8 @@ PHONETIC_SIMILARITY_THRESHOLD = 0.78
 # Kelime uzunluğu farkı bu değeri aşarsa fonetik karşılaştırma yapılmaz.
 # Hem phonetic_matcher.py hem voting_engine.py bu değeri kullanır (önceden her dosyada farklıydı).
 PHONETIC_LENGTH_DIFF_MAX = 3
+# Jaro-Winkler hesaplamalarını önbelleğe alan lru_cache boyutu (38 banned × ~108 tekil kelime)
+PHONETIC_CACHE_MAXSIZE = 4096
 
 # ─── Bip Sesi Ayarları ───────────────────────────────────────────
 BEEP_FREQUENCY_HZ = 1000   # Klasik TV sansür bip frekansı
@@ -69,6 +82,12 @@ MIN_SEGMENT_DURATION_MS = 10
 VOTE_MERGE_THRESHOLD_MS = 80
 # Bigram kontrolünde iki ardışık kelime arasındaki maksimum boşluk (saniye)
 BIGRAM_MAX_GAP_SEC = 0.30
+
+# ─── Uzun Ses Bölümleme (Chunking) ───────────────────────────────
+# Yerel Whisper modelinde uzun dosyalar için otomatik parçalı işleme
+WHISPER_CHUNK_THRESHOLD_SEC = 60   # Bu süreyi aşan dosyalar parçalanır
+WHISPER_CHUNK_DURATION_SEC  = 30   # Her parçanın süresi (saniye)
+WHISPER_CHUNK_OVERLAP_SEC   = 5    # Parça başı/sonu örtüşme (kelime kırılmasını önler)
 
 # ─── Mikrofon / Kayıt Ayarları ───────────────────────────────────
 # tam_mod() kayıt güvenlik limiti; bu süreyi aşan kayıt otomatik durdurulur

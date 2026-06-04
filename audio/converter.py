@@ -18,12 +18,13 @@ import logging
 from pathlib import Path
 from pydub import AudioSegment
 
-logger = logging.getLogger(__name__)
+from config.settings import (
+    VOSK_REQUIRED_CHANNELS,
+    VOSK_REQUIRED_SAMPLE_RATE,
+    VOSK_REQUIRED_SAMPLE_WIDTH,
+)
 
-# Vosk'un gerektirdiği sabit değerler
-VOSK_REQUIRED_CHANNELS    = 1       # Mono
-VOSK_REQUIRED_SAMPLE_RATE = 16000   # 16 kHz
-VOSK_REQUIRED_SAMPLE_WIDTH = 2      # 16-bit (2 byte)
+logger = logging.getLogger(__name__)
 
 
 def check_ffmpeg() -> None:
@@ -55,7 +56,8 @@ def needs_conversion(audio_file_path: str) -> bool:
                 wf.getframerate()    != VOSK_REQUIRED_SAMPLE_RATE or
                 wf.getsampwidth()    != VOSK_REQUIRED_SAMPLE_WIDTH
             )
-    except Exception:
+    except (wave.Error, EOFError, OSError):
+        logger.debug("[DÖNÜŞTÜRÜCÜ] WAV başlık okunamadı, dönüştürme yapılacak: '%s'", audio_file_path)
         return True
 
 

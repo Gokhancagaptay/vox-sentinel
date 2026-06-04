@@ -12,7 +12,7 @@ Bu modül iki kaynaktan gelen tespitleri birleştirir ve
 
 import unicodedata
 import logging
-import jellyfish
+from typing import Any
 
 from config.settings import (
     VOTE_MERGE_THRESHOLD_MS,
@@ -22,6 +22,7 @@ from config.settings import (
 )
 from config.banned_words import YASAKLI_KELIMELER
 from config.whitelist import beyaz_listede_mi
+from asr.phonetic_matcher import _jaro_winkler_cached
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ def _normalize(text: str) -> str:
     return unicodedata.normalize("NFC", text.lower().strip())
 
 
-def find_whisper_banned_words(whisper_words: list[dict]) -> list[dict]:
+def find_whisper_banned_words(whisper_words: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
     Whisper transkript çıktısında yasaklı kelimeleri arar.
 
@@ -138,7 +139,7 @@ def _match_single_word(word_normalized: str) -> tuple[str | None, float]:
         # Kısa kelimeler için eşik çok yüksek tutulur (yanlış alarm önleme)
         if abs(len(word_normalized) - len(banned_normalized)) <= PHONETIC_LENGTH_DIFF_MAX:
             threshold = _fuzzy_threshold_for(word_normalized)
-            score = jellyfish.jaro_winkler_similarity(word_normalized, banned_normalized)
+            score = _jaro_winkler_cached(word_normalized, banned_normalized)
             if score >= threshold and score > best_score:
                 best_match = banned
                 best_score = score
@@ -146,7 +147,7 @@ def _match_single_word(word_normalized: str) -> tuple[str | None, float]:
     return best_match, best_score
 
 
-def _check_bigrams(whisper_words: list[dict]) -> list[dict]:
+def _check_bigrams(whisper_words: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
     Ardışık iki Whisper kelimesini birleştirerek yasaklı kelime arar.
     Whisper'ın uzun kelimeleri (orospu, pezevenk…) bazen ikiye bölmesini yakalar.
@@ -190,7 +191,7 @@ def _check_bigrams(whisper_words: list[dict]) -> list[dict]:
             if abs(len(combined) - len(banned_normalized)) > PHONETIC_LENGTH_DIFF_MAX:
                 continue
 
-            score = jellyfish.jaro_winkler_similarity(combined, banned_normalized)
+            score = _jaro_winkler_cached(combined, banned_normalized)
             if score >= WHISPER_BIGRAM_FUZZY_THRESHOLD and score > best_score:
                 matched_banned = banned
                 best_score = score
@@ -212,10 +213,10 @@ def _check_bigrams(whisper_words: list[dict]) -> list[dict]:
 
 
 def vote_and_merge(
-    whisper_detections: list[dict],
-    phonetic_detections: list[dict],
+    whisper_detections: list[dict[str, Any]],
+    phonetic_detections: list[dict[str, Any]],
     merge_threshold_ms: int = VOTE_MERGE_THRESHOLD_MS,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """
     Whisper ve fonetik tespitleri birleştirerek final sansür listesini üretir.
 

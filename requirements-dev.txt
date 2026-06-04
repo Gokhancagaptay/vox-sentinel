@@ -2,3 +2,10 @@
 -r requirements.txt
 SpeechRecognition>=3.10.0
 gTTS>=2.3.0
+
+# Geliştirme / kalite araçları
+pre-commit>=3.7.0
+black>=24.4.2
+ruff>=0.4.4
+mypy>=1.10.0
+pytest>=8.2.0

@@ -15,10 +15,13 @@ Bağımlılık: jellyfish kütüphanesi (pip install jellyfish)
 
 import logging
 import unicodedata
+from functools import lru_cache
+from typing import Any
 import jellyfish
 
-from config.settings import PHONETIC_SIMILARITY_THRESHOLD, PHONETIC_LENGTH_DIFF_MAX
+from config.settings import PHONETIC_SIMILARITY_THRESHOLD, PHONETIC_LENGTH_DIFF_MAX, PHONETIC_CACHE_MAXSIZE
 from config.banned_words import YASAKLI_KELIMELER
+from config.whitelist import beyaz_listede_mi
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +29,12 @@ logger = logging.getLogger(__name__)
 _BANNED_NORMALIZED: list[str] = [
     unicodedata.normalize("NFC", w.lower()) for w in YASAKLI_KELIMELER
 ]
+
+
+@lru_cache(maxsize=PHONETIC_CACHE_MAXSIZE)
+def _jaro_winkler_cached(word: str, banned: str) -> float:
+    """Memoized Jaro-Winkler; phonetic_matcher ve voting_engine paylaşır."""
+    return jellyfish.jaro_winkler_similarity(word, banned)
 
 
 def find_phonetic_match(
@@ -52,9 +61,11 @@ def find_phonetic_match(
     word_normalized = unicodedata.normalize("NFC", word.lower().strip())
 
     # Çok kısa kelimeleri fonetik karşılaştırmaya sokma.
-    # "bu", "o", "biz" gibi 2 karakterli kelimeler "budala" ile
-    # Jaro-Winkler'da yüksek skor alabilir; bu yanlış alarmları önler.
     if len(word_normalized) < 3:
+        return None, 0.0
+
+    # Beyaz listede varsa fonetik karşılaştırma yapma.
+    if beyaz_listede_mi(word_normalized):
         return None, 0.0
 
     # Varsayılan listeyle çağrıldıysa önbelleklenmiş normalized versiyonu kullan.
@@ -71,7 +82,7 @@ def find_phonetic_match(
         if abs(len(word_normalized) - len(banned_lower)) > PHONETIC_LENGTH_DIFF_MAX:
             continue
 
-        score = jellyfish.jaro_winkler_similarity(word_normalized, banned_lower)
+        score = _jaro_winkler_cached(word_normalized, banned_lower)
         if score >= threshold and score > best_score:
             best_match = banned
             best_score = score
@@ -80,10 +91,10 @@ def find_phonetic_match(
 
 
 def scan_for_phonetic_matches(
-    vosk_words: list[dict],
+    vosk_words: list[dict[str, Any]],
     banned_list: list[str] = YASAKLI_KELIMELER,
     threshold: float = PHONETIC_SIMILARITY_THRESHOLD,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """
     Vosk çıktısındaki tüm kelimeleri fonetik eşleşme için tarar.
 

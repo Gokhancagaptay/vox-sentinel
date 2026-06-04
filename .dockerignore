@@ -1,0 +1,15 @@
+model/
+whisper_models/
+*.wav
+*.mp3
+*.ogg
+*.m4a
+.git/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.rar
+*.zip

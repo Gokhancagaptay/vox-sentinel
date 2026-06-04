@@ -11,7 +11,9 @@ Performans: Segmentler soldan sağa tek geçişte birleştirilerek O(n) ses inş
 """
 
 import logging
+from typing import Any
 from pydub import AudioSegment
+from pydub.exceptions import CouldntDecodeError
 from pydub.generators import Sine
 
 from config.settings import (
@@ -21,7 +23,7 @@ from config.settings import (
 logger = logging.getLogger(__name__)
 
 
-def _merge_overlapping(segments: list[dict], audio_duration_ms: int) -> list[dict]:
+def _merge_overlapping(segments: list[dict[str, Any]], audio_duration_ms: int) -> list[dict[str, Any]]:
     """
     Padding uygulandıktan sonra çakışan veya bitişik segmentleri birleştirir.
     Giriş listesi start_ms'e göre sıralı olmalıdır.
@@ -50,7 +52,7 @@ def _merge_overlapping(segments: list[dict], audio_duration_ms: int) -> list[dic
 
 def apply_censor_beeps(
     audio_file_path: str,
-    censor_segments: list[dict],
+    censor_segments: list[dict[str, Any]],
     output_path: str,
 ) -> str:
     """
@@ -78,7 +80,7 @@ def apply_censor_beeps(
     logger.info("[SES] '%s' yükleniyor...", audio_file_path)
     try:
         audio = AudioSegment.from_file(audio_file_path)
-    except Exception as exc:
+    except (CouldntDecodeError, FileNotFoundError, OSError) as exc:
         raise RuntimeError(
             f"Ses dosyası yüklenemedi: '{audio_file_path}'\nHata: {exc}"
         ) from exc

@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  voxsentinel:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - VOXSENTINEL_WHISPER_MODE=local
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    volumes:
+      # Vosk modeli read-only mount — container yeniden oluşturulsa da silinmez
+      - ./model:/app/model:ro
+      # Whisper yerel modeli kalıcı olarak saklanır
+      - ./whisper_models:/app/whisper_models
+    restart: unless-stopped

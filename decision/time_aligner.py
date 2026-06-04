@@ -17,7 +17,6 @@ Greedy LCS'nin aksine DP-LCS en uzun ortak alt diziyi kesin olarak bulur.
 """
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

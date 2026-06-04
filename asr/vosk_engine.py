@@ -13,6 +13,8 @@ import os
 import wave
 import json
 import logging
+import threading
+from typing import Any
 from vosk import Model, KaldiRecognizer, SetLogLevel
 
 from config.settings import VOSK_MODEL_PATH, VOSK_CHUNK_SIZE
@@ -24,12 +26,17 @@ logger = logging.getLogger(__name__)
 
 # Model bir kez yüklenir; modülün ömrü boyunca önbellekte tutulur
 _vosk_model: Model | None = None
+_vosk_model_lock = threading.Lock()
 
 
 def _get_model() -> Model:
     """Singleton Vosk modelini döndürür. İlk çağrıda diskten yükler."""
     global _vosk_model
-    if _vosk_model is None:
+    if _vosk_model is not None:
+        return _vosk_model
+    with _vosk_model_lock:
+        if _vosk_model is not None:
+            return _vosk_model
         if not os.path.exists(VOSK_MODEL_PATH):
             raise FileNotFoundError(
                 f"Vosk model dizini bulunamadı: '{VOSK_MODEL_PATH}'\n"
@@ -47,7 +54,7 @@ def _get_model() -> Model:
     return _vosk_model
 
 
-def get_word_timestamps(wav_file_path: str) -> list[dict]:
+def get_word_timestamps(wav_file_path: str) -> list[dict[str, Any]]:
     """
     Bir WAV dosyasını Vosk ile analiz eder ve kelime bazlı
     zaman damgalarını döndürür.
@@ -79,7 +86,7 @@ def get_word_timestamps(wav_file_path: str) -> list[dict]:
         recognizer = KaldiRecognizer(model, wf.getframerate())
         recognizer.SetWords(True)  # Kelime bazlı zaman damgası aktif
 
-        word_timestamps: list[dict] = []
+        word_timestamps: list[dict[str, Any]] = []
 
         # Dosyayı parça parça işle
         while True:
@@ -110,7 +117,7 @@ def get_word_timestamps(wav_file_path: str) -> list[dict]:
     return word_timestamps
 
 
-def _extract_words(vosk_result: dict, target_list: list[dict]) -> None:
+def _extract_words(vosk_result: dict[str, Any], target_list: list[dict[str, Any]]) -> None:
     """
     Vosk JSON sonucundan kelime listesini çıkarıp target_list'e ekler.
     'result' anahtarı yoksa (sessiz bölüm) hiçbir şey eklenmez.

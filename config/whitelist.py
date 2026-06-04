@@ -20,6 +20,11 @@ BEYAZ_LISTE: set[str] = {
     "bu", "o", "biz", "siz", "ben", "sen",
     "bir", "ile", "ama", "da", "de",
 
+    # Test sonuçlarından türetilen yanlış alarm kelimeleri
+    "bak", "bakın", "bakıyorum", "bakıyor",   # bak ≈ bok (0.80)
+    "başka", "başkası", "başkasına",           # başka ≈ taşak (0.78)
+    "mantık", "mantıklı", "mantıksız",        # mantık ≈ manyak (0.84)
+
     # "sik" kökü — bilim/coğrafya terimleri
     "siklon",
     "siklotron",

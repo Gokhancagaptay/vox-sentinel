@@ -12,7 +12,7 @@ word_timestamps=True ile kelime bazlı start/end süresi de döndürülür.
 import os
 import time
 import logging
-from typing import Optional
+from typing import Any
 
 import openai
 
@@ -29,8 +29,8 @@ logger = logging.getLogger(__name__)
 
 def transcribe_with_timestamps(
     audio_file_path: str,
-    language: Optional[str] = WHISPER_LANGUAGE,
-) -> list[dict]:
+    language: str | None = WHISPER_LANGUAGE,
+) -> list[dict[str, Any]]:
     """
     OpenAI Whisper API kullanarak ses dosyasını kelime bazlı
     zaman damgalarıyla transkribe eder.
@@ -99,7 +99,7 @@ def transcribe_with_timestamps(
     raise last_exc  # type: ignore[misc]
 
 
-def _parse_whisper_response(response) -> list[dict]:
+def _parse_whisper_response(response: Any) -> list[dict[str, Any]]:
     """
     Whisper API yanıtından kelime listesini standart formata çevirir.
     API'nin farklı response_format çıktılarını tolere eder.

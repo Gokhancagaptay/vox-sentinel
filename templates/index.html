@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VoxSentinel — Türkçe Ses Sansür Sistemi</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    header h1 { font-size: 2rem; font-weight: 700; color: #f8fafc; }
+    header p  { color: #94a3b8; margin-top: 0.4rem; }
+
+    /* ─── Health badge ─────────────────────────────────── */
+    #health-bar {
+      display: flex; gap: 0.6rem; flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+    .badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .badge.ok  { background: #166534; color: #bbf7d0; }
+    .badge.err { background: #7f1d1d; color: #fecaca; }
+    .badge.info{ background: #1e3a5f; color: #bfdbfe; }
+
+    /* ─── Drop zone ────────────────────────────────────── */
+    #drop-zone {
+      width: 100%;
+      max-width: 560px;
+      border: 2px dashed #334155;
+      border-radius: 1rem;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: #1e2532;
+    }
+    #drop-zone:hover, #drop-zone.drag-over {
+      border-color: #6366f1;
+      background: #1e2040;
+    }
+    #drop-zone svg { margin-bottom: 0.75rem; opacity: 0.5; }
+    #drop-zone p   { color: #64748b; font-size: 0.9rem; }
+    #drop-zone strong { color: #cbd5e1; }
+    #file-input { display: none; }
+
+    /* ─── Status panel ─────────────────────────────────── */
+    #status-panel {
+      width: 100%;
+      max-width: 560px;
+      margin-top: 1.5rem;
+      display: none;
+    }
+
+    .card {
+      background: #1e2532;
+      border: 1px solid #334155;
+      border-radius: 0.75rem;
+      padding: 1.25rem 1.5rem;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 1.2rem; height: 1.2rem;
+      border: 3px solid #334155;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 0.5rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #status-text { font-size: 0.95rem; color: #94a3b8; }
+    #result-info  { margin-top: 0.75rem; font-size: 0.85rem; color: #64748b; }
+
+    .btn {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.6rem 1.4rem;
+      border-radius: 0.5rem;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary  { background: #6366f1; color: #fff; }
+    .btn-secondary{ background: #334155; color: #cbd5e1; }
+
+    #download-btn { display: none; }
+    #reset-btn    { display: none; }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 0.75rem;
+      color: #475569;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>VoxSentinel</h1>
+  <p>Türkçe ses dosyalarında küfür tespiti ve sansür</p>
+</header>
+
+<!-- Health badges -->
+<div id="health-bar">
+  <span class="badge info" id="badge-whisper">Whisper: yükleniyor…</span>
+  <span class="badge info" id="badge-ffmpeg">FFmpeg: …</span>
+  <span class="badge info" id="badge-vosk">Vosk: …</span>
+  <span class="badge info" id="badge-words">Kelimeler: …</span>
+</div>
+
+<!-- Drop zone -->
+<div id="drop-zone" role="button" tabindex="0"
+     onclick="document.getElementById('file-input').click()"
+     ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+  <svg width="40" height="40" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24">
+    <path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 20h16"/>
+  </svg>
+  <p><strong>Tıkla veya sürükle</strong> — ses dosyanı buraya bırak</p>
+  <p style="margin-top:0.3rem">WAV, MP3, M4A, OGG desteklenir</p>
+  <input type="file" id="file-input" accept="audio/*" onchange="onFileSelected(event)" />
+</div>
+
+<!-- Status / result panel -->
+<div id="status-panel">
+  <div class="card">
+    <div id="status-row">
+      <span class="spinner" id="spinner"></span>
+      <span id="status-text">İşleniyor…</span>
+    </div>
+    <div id="result-info"></div>
+    <div>
+      <a id="download-btn" class="btn btn-primary" href="#" download>İndir</a>
+      <button id="reset-btn" class="btn btn-secondary" onclick="reset()">Yeni Dosya</button>
+    </div>
+  </div>
+</div>
+
+<footer>VoxSentinel &mdash; Türkçe konuşma sansür sistemi</footer>
+
+<script>
+  // ─── Health check ──────────────────────────────────────────────
+  async function loadHealth() {
+    try {
+      const r = await fetch('/health');
+      const d = await r.json();
+      setBadge('badge-whisper', `Whisper: ${d.whisper_mode}`, true);
+      setBadge('badge-ffmpeg',  `FFmpeg: ${d.ffmpeg ? 'var' : 'YOK'}`, d.ffmpeg);
+      setBadge('badge-vosk',    `Vosk: ${d.vosk_model ? 'hazır' : 'YOK'}`, d.vosk_model);
+      setBadge('badge-words',   `${d.banned_word_count} yasaklı kelime`, true);
+    } catch {
+      setBadge('badge-whisper', 'API bağlantısı yok', false);
+    }
+  }
+
+  function setBadge(id, text, ok) {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.className = `badge ${ok ? 'ok' : 'err'}`;
+  }
+
+  // ─── Drag & drop ───────────────────────────────────────────────
+  function onDragOver(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.add('drag-over');
+  }
+  function onDragLeave() {
+    document.getElementById('drop-zone').classList.remove('drag-over');
+  }
+  function onDrop(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) uploadFile(file);
+  }
+  function onFileSelected(e) {
+    const file = e.target.files[0];
+    if (file) uploadFile(file);
+  }
+
+  // ─── Upload & poll ─────────────────────────────────────────────
+  async function uploadFile(file) {
+    showPanel(`"${file.name}" yükleniyor…`);
+
+    const form = new FormData();
+    form.append('file', file);
+
+    let jobId;
+    try {
+      const r = await fetch('/censor/async', { method: 'POST', body: form });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const d = await r.json();
+      jobId = d.job_id;
+    } catch (err) {
+      showError(`Yükleme hatası: ${err.message}`);
+      return;
+    }
+
+    setStatus('İşleniyor… (bu birkaç saniye sürebilir)', true);
+    pollJob(jobId);
+  }
+
+  function pollJob(jobId) {
+    const interval = setInterval(async () => {
+      try {
+        const r = await fetch(`/jobs/${jobId}`);
+        const d = await r.json();
+
+        if (d.status === 'done') {
+          clearInterval(interval);
+          showResult(jobId, d.segments_censored);
+        } else if (d.status === 'error') {
+          clearInterval(interval);
+          showError(d.error || 'Bilinmeyen hata');
+        }
+      } catch {
+        clearInterval(interval);
+        showError('Sunucu yanıt vermedi.');
+      }
+    }, 2000);
+  }
+
+  // ─── UI helpers ────────────────────────────────────────────────
+  function showPanel(msg) {
+    document.getElementById('status-panel').style.display = 'block';
+    setStatus(msg, true);
+    document.getElementById('result-info').textContent = '';
+    document.getElementById('download-btn').style.display = 'none';
+    document.getElementById('reset-btn').style.display = 'none';
+  }
+
+  function setStatus(msg, spinning) {
+    document.getElementById('status-text').textContent = msg;
+    document.getElementById('spinner').style.display = spinning ? 'inline-block' : 'none';
+  }
+
+  function showResult(jobId, count) {
+    setStatus('Tamamlandı!', false);
+    const info = document.getElementById('result-info');
+    info.textContent = count > 0
+      ? `${count} segment sansürlendi.`
+      : 'Yasaklı kelime bulunamadı — dosya değiştirilmedi.';
+
+    const btn = document.getElementById('download-btn');
+    btn.href = `/jobs/${jobId}/download`;
+    btn.style.display = 'inline-block';
+
+    document.getElementById('reset-btn').style.display = 'inline-block';
+  }
+
+  function showError(msg) {
+    setStatus(`Hata: ${msg}`, false);
+    document.getElementById('reset-btn').style.display = 'inline-block';
+  }
+
+  function reset() {
+    document.getElementById('status-panel').style.display = 'none';
+    document.getElementById('file-input').value = '';
+  }
+
+  loadHealth();
+</script>
+</body>
+</html>

@@ -13,6 +13,15 @@ numpy>=1.21.0
 pydub
 pyaudio
 
+# ─── Whisper (yerel, hızlı backend) ─────────────────────────────
+faster-whisper>=1.0.0
+
+# ─── REST API ────────────────────────────────────────────────────
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9
+jinja2>=3.1.4
+
 # ─── Kurulum ─────────────────────────────────────────────────────
 #   pip install -r requirements.txt
 #
